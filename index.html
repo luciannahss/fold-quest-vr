@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MR Prototype</title>
+<style>body{margin:0;overflow:hidden;background:#000}</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { ARButton } from 'three/addons/webxr/ARButton.js';
+
+// Renderer com XR e fundo transparente (para o passthrough aparecer)
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(innerWidth, innerHeight);
+renderer.xr.enabled = true;
+document.body.appendChild(renderer.domElement);
+document.body.appendChild(
+  ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] })
+);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.01, 20);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 2));
+const sun = new THREE.DirectionalLight(0xffffff, 1);
+sun.position.set(1, 3, 2);
+scene.add(sun);
+
+// Anel que indica onde o objeto vai cair (superfície detectada)
+const reticle = new THREE.Mesh(
+  new THREE.RingGeometry(0.08, 0.1, 32).rotateX(-Math.PI / 2),
+  new THREE.MeshBasicMaterial({ color: 0x00ffaa })
+);
+reticle.matrixAutoUpdate = false;
+reticle.visible = false;
+scene.add(reticle);
+
+// Controle / mão. Em Quest, 'select' = pinça/gatilho, 'squeeze' = botão de pegar
+const controller = renderer.xr.getController(0);
+scene.add(controller);
+
+const objects = [];
+const cubeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+
+// Colocar um cubo onde o anel está
+controller.addEventListener('select', () => {
+  if (!reticle.visible) return;
+  const mesh = new THREE.Mesh(
+    cubeGeo,
+    new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff })
+  );
+  mesh.position.setFromMatrixPosition(reticle.matrix);
+  scene.add(mesh);
+  objects.push(mesh);
+});
+
+// Pegar o cubo mais próximo da mão
+let grabbed = null;
+controller.addEventListener('squeezestart', () => {
+  const handPos = new THREE.Vector3().setFromMatrixPosition(controller.matrixWorld);
+  let best = null, bestDist = 0.15;
+  for (const o of objects) {
+    const d = o.position.distanceTo(handPos);
+    if (d < bestDist) { bestDist = d; best = o; }
+  }
+  if (best) { grabbed = best; controller.attach(best); }
+});
+controller.addEventListener('squeezeend', () => {
+  if (grabbed) { scene.attach(grabbed); grabbed = null; }
+});
+
+// Hit test: descobre a superfície real apontada pelo controle
+let hitTestSource = null;
+let hitTestRequested = false;
+let localSpace = null;
+
+renderer.setAnimationLoop((time, frame) => {
+  if (frame) {
+    const session = renderer.xr.getSession();
+
+    if (!hitTestRequested) {
+      hitTestRequested = true;
+      session.requestReferenceSpace('local-floor').then(s => { localSpace = s; });
+      session.requestReferenceSpace('viewer').then(viewerSpace => {
+        session.requestHitTestSource({ space: viewerSpace }).then(src => {
+          hitTestSource = src;
+        });
+      });
+      session.addEventListener('end', () => {
+        hitTestRequested = false;
+        hitTestSource = null;
+      });
+    }
+
+    if (hitTestSource && localSpace) {
+      const hits = frame.getHitTestResults(hitTestSource);
+      if (hits.length) {
+        const pose = hits[0].getPose(localSpace);
+        reticle.visible = true;
+        reticle.matrix.fromArray(pose.transform.matrix);
+      } else {
+        reticle.visible = false;
+      }
+    }
+  }
+  renderer.render(scene, camera);
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
