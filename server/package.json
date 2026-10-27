@@ -1,0 +1,10 @@
+{
+  "name": "foldquest-group-server",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Room server for the Fold Quest VR group challenge (WebSocket).",
+  "scripts": { "start": "node server.mjs" },
+  "dependencies": { "ws": "8.22.0" },
+  "engines": { "node": ">=18" }
+}

@@ -1,0 +1,6 @@
+# not part of the published game
+node_modules/
+server/node_modules/
+data/
+.claude/
+.DS_Store

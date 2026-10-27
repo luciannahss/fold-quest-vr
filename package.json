@@ -1,0 +1,19 @@
+{
+  "name": "fold-quest-vr",
+  "version": "0.1.0",
+  "description": "WebXR educational game: protein secondary structure (Meta Quest 3)",
+  "scripts": {
+    "serve": "python3 -m http.server 8080",
+    "test": "node tools/test-chem.mjs && node tools/test-sheet.mjs && node tools/test-coil.mjs",
+    "server": "node server/server.mjs",
+    "test:group": "node tools/test-group.mjs",
+    "test:i18n": "node tools/test-i18n.mjs"
+  },
+  "dependencies": {
+    "isosurface": "^1.0.0",
+    "iwer": "^2.6.0",
+    "three": "^0.186.1"
+  },
+  "type": "module",
+  "private": true
+}
