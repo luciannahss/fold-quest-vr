@@ -8,6 +8,7 @@ import { applyRotation } from './handle.js';
 import { makeLabel } from './vessels.js';
 import { POOL, ROUNDS, CATEGORIES } from './surfaces/info.js';
 import { t as tr } from './i18n.js';
+import { loadCartoon, makeCartoonGroup } from './cartoons.js';
 
 export const STAGE = new THREE.Vector3(0, 1.68, -1.95);     // centre of the shadow
 const AUTO_NEXT_S = 12;                             // free play: seconds to read the facts before the next shadow starts by itself
@@ -154,6 +155,7 @@ export class Level3 {
     this.revealOutline = makeOutline(new THREE.BufferGeometry(), true); this.revealOutline.material.uniforms.uOpacity.value = 0; this.reveal.add(this.revealOutline);
     this.reveal.position.copy(STAGE); this.group.add(this.reveal);
     this.revealT = 1;
+    this.glassT = 0; this.glassDelay = 0; this.cartoon = null; this.cartoonMats = [];   // after the reveal the surface turns glassy and the cartoon fades in
     // drop-zone halo (visible while a card is held near the shadow)
     this.halo = new THREE.Mesh(new THREE.SphereGeometry(DROP_R, 24, 16), new THREE.MeshBasicMaterial({ color: 0x38e8ff, transparent: true, opacity: 0.0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
     this.halo.position.copy(STAGE); this.group.add(this.halo);
@@ -182,6 +184,7 @@ export class Level3 {
     const rs = Math.min(0.8, 1.55 * dispRadius(target.radius));
     this.shadow.scale.setScalar(rs); this.reveal.scale.setScalar(rs);
     this.shadowMat.opacity = 1; this.revealMat.opacity = 0; this.revealOutline.material.uniforms.uOpacity.value = 0; this.revealT = 1; this.shadow.visible = true;
+    this.glassT = 0; this.revealMat.depthWrite = true; this._setCartoon(target);
     // choices: the target and the other three, shuffled
     const ids = [R.target, ...R.others];
     for (let k = ids.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [ids[k], ids[j]] = [ids[j], ids[k]]; }
@@ -223,6 +226,34 @@ export class Level3 {
     this.cards.push(card);
   }
 
+  /** builds the cartoon of the target protein inside the reveal mesh (hidden until the shadow has been solved) */
+  _setCartoon(target) {
+    if (this.cartoon) { this.reveal.remove(this.cartoon); this.cartoon = null; this.cartoonMats = []; }
+    const id = this._cartoonId = target.id;
+    loadCartoon(id).then((cd) => {
+      if (this._cartoonId !== id) return;
+      const grp = makeCartoonGroup(cd, target.radius, 1, 1.7);  // unit radius: the reveal mesh's own scale sizes it; thicker ribbons read better against the backdrop
+      const mats = new Set();
+      grp.traverse((o) => { if (o.material) mats.add(o.material); });
+      this.cartoon = grp; this.cartoonMats = [...mats]; this._cartoonOn = null;
+      this.reveal.add(grp);
+      this._applyGlass();
+    }).catch((e) => console.warn('cartoon', e));
+  }
+
+  /** glassT 0..1: the opaque surface becomes see-through (and loses most of its outline) while the cartoon fades in */
+  _applyGlass() {
+    const a = ease(this.glassT);
+    if (this.revealT >= 1) {
+      this.revealMat.opacity = 1 - 0.78 * a; this.revealMat.depthWrite = a === 0;
+      this.revealOutline.material.uniforms.uOpacity.value = 1 - 0.85 * a;
+    }
+    if (!this.cartoon) return;
+    this.cartoon.visible = a > 0;
+    const fading = a < 1;
+    for (const m of this.cartoonMats) { m.opacity = a; if (m.transparent !== fading) { m.transparent = fading; m.needsUpdate = true; } }
+  }
+
   say(title, body, tone = 'info') { this.coach = { title, body, tone }; this.game.coachPanel.redraw(); }
   sig() { return `${this.round}|${this.phase}|${this.mistakes}|${this.hints}|${this.solved.filter(Boolean).length}|${this.autoLeft()}`; }
   /** seconds until the next shadow starts by itself (0 = not counting; a group challenge is paced by the server) */
@@ -251,12 +282,12 @@ export class Level3 {
       this.phase = 'revealed'; this.solved[this.round] = true;
       this.autoAt = this.t + AUTO_NEXT_S;
       sfx.good();
-      this.revealT = 0;
+      this.revealT = 0; this.glassT = 0; this.glassDelay = 0.7;
       card.state = 'gone'; card.t = 0;
       this.game.bursts.spawn(STAGE, 0xffe08a, 90, 1.5);
       const info = this.targetInfo, cat = CATEGORIES[info.category];
       const last = this.round === ROUNDS.length - 1;
-      this.say(`✓ ${info.name}`, tr('l3.right', { cat: cat.label, pdb: info.pdb, fact: info.fact, last: last ? tr('l3.last') : '' }), 'good');
+      this.say(`✓ ${info.name}`, tr('l3.right', { cat: cat.label, pdb: info.pdb, fact: info.fact, last: `\n\n${tr('l3.cartoon')}${last ? tr('l3.last') : ''}` }), 'good');
     } else {
       this.mistakes++; card.tried = true; card.state = 'bad'; card.t = 0; card.from.copy(card.group.position);
       sfx.bad();
@@ -277,6 +308,7 @@ export class Level3 {
     this.phase = 'done';
     this._clearCards();
     this.shadowMat.opacity = 0; this.revealMat.opacity = 1; this.revealOutline.material.uniforms.uOpacity.value = 1; this.reveal.scale.setScalar(0.5);
+    this.glassT = 1; this._applyGlass();   // the final view shows the protein as glass + cartoon
     const stars = this.mistakes <= 2 && this.hints <= 3 ? 3 : this.mistakes <= 6 ? 2 : 1;
     sfx.win();
     this.say(tr('l3.done.title', { stars: '★'.repeat(stars) + '☆'.repeat(3 - stars) }), tr('l3.done', { n: ROUNDS.length, m: this.mistakes, h: this.hints }), 'good');
@@ -382,6 +414,10 @@ export class Level3 {
       const a = ease(this.revealT);
       this.revealMat.opacity = a; this.revealOutline.material.uniforms.uOpacity.value = a; this.shadowMat.opacity = 1 - a;
       if (this.revealT >= 1) this.shadow.visible = false;
+    }
+    if (this.revealT >= 1 && (this.phase === 'revealed' || this.phase === 'done') && this.glassT < 1) {
+      this.glassDelay -= dt;
+      if (this.glassDelay <= 0) { this.glassT = Math.min(1, this.glassT + dt / 1.5); this._applyGlass(); }
     }
     // gentle turn of the revealed protein so its shape can be admired
     if (this.phase === 'revealed' || this.phase === 'done') this.reveal.rotation.y = Math.sin(t * 0.6) * 0.5;

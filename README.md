@@ -107,6 +107,7 @@ Test without a headset: open `http://localhost:8080/?iwer` (Meta Quest 3 emulato
 | `src/chemistry.js` | NeRF backbone builder from φ/ψ angles, H-bond detection, sheet-lane optimiser, Chou–Fasman propensities |
 | `src/chain.js` | A foldable peptide: instanced atoms/bonds, ribbon, torsion interpolation, coil sampling |
 | `src/vessels.js` | Template vessels built from the *same* geometry as the chains (so a correct chain fits exactly) |
+| `src/cartoons.js` | loader and builder of the cartoon views (shared by the gallery and by the quiz reveal) |
 | `src/gallery.js`, `src/cartoons/` | Level 3 protein gallery (surface / cartoon / both) and its backbone data (`tools/make-cartoon.mjs`) |
 | `src/lab.js` | Level 0 sequence lab (keypad + analysis boards; reuses Level 0's chain, vessels and fold-or-reject logic) |
 | `src/game.js` | Level 0 flow, grab/drop, fit-or-reject logic, feedback text, panels, level switching |

@@ -414,4 +414,5 @@ export default {
   'gal.legend': 'Cartoon colours',
   'gal.grab': 'Grab the protein to turn it and look from every side. Zoom with − / +, with the mouse wheel / thumbstick while you hold it, or pinch with both hands and move them apart or together.',
   'gal.loading': 'Loading…',
+  'l3.cartoon': 'Inside the glassy surface you can now see the folded chain: helices (cyan), strands (magenta) and coils (yellow).',
 };

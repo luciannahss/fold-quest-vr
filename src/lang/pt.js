@@ -412,4 +412,5 @@ export default {
   'gal.legend': 'Cores do cartoon',
   'gal.grab': 'Agarre a proteína para girá-la e olhá-la de todos os lados. Dê zoom com − / +, com a rodinha do mouse / o direcional enquanto a segura, ou faça pinça com as duas mãos e afaste-as ou aproxime-as.',
   'gal.loading': 'Carregando…',
+  'l3.cartoon': 'Dentro da superfície transparente você vê agora a cadeia dobrada: hélices (ciano), fitas (magenta) e alças (amarelo).',
 };

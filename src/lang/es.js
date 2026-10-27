@@ -412,4 +412,5 @@ export default {
   'gal.legend': 'Colores del cartoon',
   'gal.grab': 'Agarra la proteína para girarla y verla desde todos los lados. Haz zoom con − / +, con la rueda del ratón / el joystick mientras la sujetas, o pellizca con las dos manos y sepáralas o júntalas.',
   'gal.loading': 'Cargando…',
+  'l3.cartoon': 'Dentro de la superficie transparente ahora ves la cadena plegada: hélices (cian), hebras (magenta) y bucles (amarillo).',
 };

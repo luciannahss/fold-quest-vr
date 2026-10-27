@@ -6,8 +6,7 @@ import { THEME } from './ui.js';
 import { t } from './i18n.js';
 import { sfx } from './audio.js';
 import { applyRotation } from './handle.js';
-import { K } from './chain.js';
-import { makeCartoon } from './cartoon.js';
+import { loadCartoon, makeCartoonGroup } from './cartoons.js';
 import { loadSurface, surfaceMaterial, makeOutline } from './level3.js';
 import { POOL, CATEGORIES } from './surfaces/info.js';
 
@@ -16,50 +15,6 @@ const RADIUS = 0.5;                                 // metres: every protein is 
 const MODES = ['surface', 'cartoon', 'both'];
 const ZOOM_MIN = 0.4, ZOOM_MAX = 3;                 // x the default size
 const IDS = Object.keys(POOL);
-
-// ---------------------------------------------------------------- cartoon data ('CRT1' files from tools/make-cartoon.mjs)
-const cartoonCache = new Map();
-export function loadCartoon(id) {
-  if (cartoonCache.has(id)) return cartoonCache.get(id);
-  const p = fetch(new URL(`./cartoons/${id}.bin`, import.meta.url)).then((r) => r.arrayBuffer()).then((buf) => {
-    const dv = new DataView(buf);
-    if (dv.getUint32(0, true) !== 0x31545243) throw new Error('bad cartoon file ' + id);
-    const hl = dv.getUint32(4, true);
-    const head = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 8, hl)).replace(/\0+$/, ''));
-    const n = head.n, pad4 = (x) => (x + 3) & ~3;
-    let off = 8 + hl;
-    const ca = new Int16Array(buf, off, n * 3); off += pad4(n * 6);
-    const dn = new Int8Array(buf, off, n * 3); off += pad4(n * 3);
-    const dc = new Int8Array(buf, off, n * 3); off += pad4(n * 3);
-    const w = new Int8Array(buf, off, n * 3); off += pad4(n * 3);
-    const ss = new Uint8Array(buf, off, n);
-    return { n, segs: head.segs, ca, dn, dc, w, ss };
-  });
-  cartoonCache.set(id, p);
-  return p;
-}
-
-/** a THREE.Group with the cartoon of every segment; `scale` turns Angstrom into the display size (see makeCartoonGroup) */
-function makeCartoonGroup(data, radiusA) {
-  const group = new THREE.Group();
-  const s = RADIUS / (radiusA * K);                      // display scale: the protein's radius -> RADIUS metres
-  let i0 = 0;
-  for (const [len] of data.segs) {
-    const res = [], ssl = [];
-    for (let i = i0; i < i0 + len; i++) {
-      const CA = new THREE.Vector3(data.ca[i * 3] / 200, data.ca[i * 3 + 1] / 200, data.ca[i * 3 + 2] / 200);
-      const N = CA.clone().add(new THREE.Vector3(data.dn[i * 3], data.dn[i * 3 + 1], data.dn[i * 3 + 2]).multiplyScalar(1 / 30));
-      const C = CA.clone().add(new THREE.Vector3(data.dc[i * 3], data.dc[i * 3 + 1], data.dc[i * 3 + 2]).multiplyScalar(1 / 30));
-      const O = C.clone().add(new THREE.Vector3(data.w[i * 3], data.w[i * 3 + 1], data.w[i * 3 + 2]).multiplyScalar(1 / 120));
-      res.push({ N, CA, C, O });
-      ssl.push(['C', 'H', 'E'][data.ss[i]]);
-    }
-    group.add(makeCartoon(res, ssl, s, null, { half: 0.026, radius: 0.0115 }).group);   // ~1.2 A ribbon half-width, ~0.5 A coil radius
-    i0 += len;
-  }
-  group.scale.setScalar(s);
-  return group;
-}
 
 export class Gallery {
   constructor(game) {
@@ -113,7 +68,7 @@ export class Gallery {
     const outline = makeOutline(surf.geo); surfMesh.add(outline);
     const glass = new THREE.Mesh(surf.geo, Object.assign(surfaceMaterial(), { transparent: true, opacity: 0.28, depthWrite: false }));   // "both": a see-through surface around the cartoon
     glass.scale.setScalar(RADIUS);
-    const cartoon = makeCartoonGroup(cd, surf.radius);
+    const cartoon = makeCartoonGroup(cd, surf.radius, RADIUS);
     const it = { surf, cd, surfMesh, glass, cartoon };
     this.items.set(id, it);
     return it;
@@ -231,7 +186,6 @@ export class Gallery {
       p.text(t(`kind.${k}.lower`), 90, y, { size: 27 }); y += 38;
     }
     y += 18;
-    p.text(t('gal.grab'), 50, y, { size: 25, maxW: w - 100, lh: 1.2 }); y += 70;
-    p.text(this.game.rotateHint(), 50, y, { size: 24, color: THEME.warn, maxW: w - 100, lh: 1.2 });
+    p.text(t('gal.grab'), 50, y, { size: 25, maxW: w - 100, lh: 1.2 });
   }
 }
