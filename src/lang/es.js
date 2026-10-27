@@ -94,7 +94,7 @@ export default {
   // ---------------------------------------------------------------- Niveles 1 y 2
   'build.title': '{level} · Construye {name} ({id})',
   'res.range': 'residuos {from}–{to}',
-  'assembly': 'ENSAMBLAJE', 'assembly.sub': 'construye aquí {name}',
+  'assembly': 'PROTEÍNA TERMINADA', 'assembly.sub': '{name} aparece aquí al completarla',
   'l1.start': '{intro}\n{input} Acerca la punta brillante de una pieza a la punta del mismo color de la pieza siguiente: un enchufe (extremo C) se une a un anillo (extremo N). Usa «Mostrar aminoácidos» para ver las cadenas laterales.',
   'l1.jnames': ['naranjas', 'verdes', 'violetas', 'rosas', 'rojas', 'turquesas', 'crema', 'marrones'],
   'l1.hint': 'El contorno tenue muestra la proteína terminada. Siguiente unión: las puntas {color} que brillan; el residuo {ato} ({a}) continúa con el residuo {bfrom} ({b}).',

@@ -160,11 +160,11 @@ export class Level2 extends Level1 {
       const mesh = new THREE.Mesh(geo, fill), edge = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 20), line);
       for (const o of [mesh, edge]) { o.position.set(x, y, z); sh.add(o); }
     };
-    const N = shape.sides, H = 0.045, R_PEG = 0.04, R_CUP = 0.056, TAB = 0.02;
+    const N = shape.sides, H = 0.06, R_PEG = 0.054, R_CUP = 0.076, TAB = 0.027;   // ~35% larger than before: easier to see and aim at
     const apo = (r) => r * Math.cos(Math.PI / N);          // distance from the centre to a face
     if (s.knob) {
       add(prismWall(N, R_PEG, 0, H)); add(polygonDisc(N, R_PEG, H));                         // prism + cap
-      add(new THREE.BoxGeometry(TAB, 0.022, H), apo(R_PEG) + TAB / 2 - 0.003, 0, H / 2);      // tab on face 0 (+X)
+      add(new THREE.BoxGeometry(TAB, 0.03, H), apo(R_PEG) + TAB / 2 - 0.003, 0, H / 2);      // tab on face 0 (+X)
     } else {
       const skip = N > 8 ? [N - 1, 0, 1] : [0];                                                 // one face (or 3 narrow ones) missing
       add(prismWall(N, R_CUP, -H, 0, skip)); add(polygonDisc(N, R_CUP, -H));                  // walls with a slot + closed floor

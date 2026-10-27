@@ -95,7 +95,7 @@ export default {
   // ---------------------------------------------------------------- Levels 1 and 2
   'build.title': '{level} · Build {name} ({id})',
   'res.range': 'residues {from}–{to}',
-  'assembly': 'ASSEMBLY', 'assembly.sub': 'build {name} here',
+  'assembly': 'FINISHED PROTEIN', 'assembly.sub': '{name} appears here when complete',
   'l1.start': '{intro}\n{input} Bring a piece’s glowing tip to the tip of the same colour on the next piece — a plug (C-end) joins a ring (N-end). Use “Show amino acids” to see the side chains.',
   'l1.jnames': ['orange', 'green', 'violet', 'pink', 'red', 'teal', 'cream', 'brown'],
   'l1.hint': 'The faint outline shows the finished protein. Next link: the glowing {color} tips — residue {ato} ({a}) continues with residue {bfrom} ({b}).',

@@ -213,7 +213,7 @@ export class Level1 {
     base.position.set(this.pedestal.x, this.pedestal.y - 0.42, this.pedestal.z);
     this.group.add(base);
     const label = makeLabel(tr('assembly'), tr('assembly.sub', { name: this.protein.name.toLowerCase() }), '#ff3df2');
-    label.scale.set(0.6, 0.15, 1); label.position.set(this.pedestal.x, this.pedestal.y + 0.5, this.pedestal.z);
+    label.scale.set(0.6, 0.15, 1); label.position.set(this.pedestal.x, this.pedestal.y + 0.78, this.pedestal.z);   // high above, clear of the pieces and their name tags
     this.group.add(label);
 
     // ghost of the finished fold (C-alpha trace) - only shown on Hint

@@ -94,7 +94,7 @@ export default {
   // ---------------------------------------------------------------- Níveis 1 e 2
   'build.title': '{level} · Monte {name} ({id})',
   'res.range': 'resíduos {from}–{to}',
-  'assembly': 'MONTAGEM', 'assembly.sub': 'monte {name} aqui',
+  'assembly': 'PROTEÍNA PRONTA', 'assembly.sub': '{name} aparece aqui ao completar',
   'l1.start': '{intro}\n{input} Leve a ponta brilhante de uma peça até a ponta da mesma cor da peça seguinte: um plugue (extremidade C) se encaixa num anel (extremidade N). Use “Mostrar aminoácidos” para ver as cadeias laterais.',
   'l1.jnames': ['laranja', 'verdes', 'violeta', 'rosa', 'vermelhas', 'verde-água', 'creme', 'marrons'],
   'l1.hint': 'O contorno tênue mostra a proteína pronta. Próxima ligação: as pontas {color} que brilham; o resíduo {ato} ({a}) continua com o resíduo {bfrom} ({b}).',
