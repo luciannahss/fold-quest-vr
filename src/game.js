@@ -385,7 +385,7 @@ export class Game {
     const options = () => p.button(this.menuOpen ? t('options.close') : t('options'), w - 56 - 290, r2, 290, bh, () => this.toggleMenu(), { active: this.menuOpen, size: 32 });
     if (this.group.inRound) {          // group challenge: clock, score and progress; no restart / replay / next
       const solved = this.phase === 'done';
-      p.text(solved ? t('group.solved', { n: this.group.myPoints }) : this.group.statusLine(this.puzzle), 56, r1 - 58, { size: 30, weight: 700, color: solved ? THEME.good : THEME.text, maxW: w - 112 });
+      p.text(solved ? this.group.solvedLine() : this.group.statusLine(this.puzzle), 56, r1 - 58, { size: 30, weight: 700, color: solved ? THEME.good : THEME.text, maxW: w - 112 });
       if (!solved) p.button(t('hint'), 56, r1, 190, bh, () => this.hint());
       options();
       return;

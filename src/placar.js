@@ -182,7 +182,7 @@ function roundHtml(s) {
   const teams = s.teams.filter((x) => x.claimed);
   return `<section style="display:flex;flex-direction:column;flex:1;min-height:0">
     <div class="round-head">
-      <div><p class="kicker">${t('pm.round', { n: s.round + 1, total: s.totalRounds })}</p><h1>${esc(challengeTitle(s.challenge))}</h1><p class="goal">${esc(goal(s.challenge))}</p></div>
+      <div><p class="kicker">${t('pm.round', { n: s.round + 1, total: s.totalRounds })}</p><h1>${esc(challengeTitle(s.challenge))}</h1><p class="goal">${esc(goal(s.challenge))}</p><p class="alldone" data-k="alldone"></p></div>
       <div class="timer" data-k="timer"></div>
     </div>
     <div class="grid n${teams.length}">${teams.map((tm) => `<div class="cell" data-cell="${tm.index}" style="--c:${tm.color}">
@@ -247,6 +247,8 @@ function patch(s) {
   const left = (ms) => Math.max(0, Math.ceil((ms - now) / 1000));
   const timer = app.querySelector('[data-k="timer"]');
   if (timer) { const l = left(s.endsAt); timer.textContent = fmtTime(l * 1000); timer.classList.toggle('low', l <= 10); }
+  const ad = app.querySelector('[data-k="alldone"]');
+  if (ad) ad.textContent = s.graceEndsAt ? t('pm.alldone', { n: Math.max(0, left(s.graceEndsAt)) }) : '';
   const cd = app.querySelector('[data-k="countdown"]');
   if (cd) cd.textContent = String(Math.max(1, left(s.phaseEndsAt)));
   const next = app.querySelector('[data-k="next"]');

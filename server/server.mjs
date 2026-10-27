@@ -29,6 +29,9 @@ const SEAT_GRACE_MS = 10 * 60_000;
 const ROOM_IDLE_MS = 45 * 60_000;
 const COUNTDOWN_MS = Number(process.env.COUNTDOWN_MS || 5000);
 const RESULTS_MS = Number(process.env.RESULTS_MS || 12000);
+/** Once every team has solved the puzzle the round stays open a little, so the teams can look at (and turn) what they built. */
+const GRACE_BY_LEVEL = { 0: 8000, 1: 20000, 2: 20000, 3: 12000 };
+const graceMs = (level) => Number(process.env.GRACE_MS ?? GRACE_BY_LEVEL[level] ?? 10000);
 /** Local addresses (dev server, tests) may always connect. */
 const LOCAL_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 if (!Number.isInteger(PORT) || PORT < 0 || PORT > 65535) throw new Error('Invalid PORT');
@@ -79,6 +82,7 @@ class Room {
     this.startedAt = 0;
     this.endsAt = 0;
     this.phaseEndsAt = 0;
+    this.doneAt = 0;   // when the last team solved the current puzzle
     for (const t of this.teams) { t.score = 0; t.rounds = []; }
   }
 
@@ -99,7 +103,7 @@ class Room {
       type: 'state', marker: MARKER, room: this.code, seq: this.seq, serverTime: now(),
       phase: this.phase, round: this.round, totalRounds: this.list.length,
       challenge: ch, challenges: this.list, plan: this.plan, scale: this.scale,
-      seconds: ch?.seconds ?? 0, startedAt: this.startedAt, endsAt: this.endsAt, phaseEndsAt: this.phaseEndsAt,
+      seconds: ch?.seconds ?? 0, graceEndsAt: this.doneAt && ch ? this.doneAt + graceMs(ch.level) : 0, startedAt: this.startedAt, endsAt: this.endsAt, phaseEndsAt: this.phaseEndsAt,
       hostOnline: this.online({ socket: this.host }),
       teams: this.teams.map((t, i) => {
         const r = this.round >= 0 ? t.rounds[this.round] : null;
@@ -216,6 +220,7 @@ class Room {
   beginCountdown(round) {
     this.round = round;
     this.phase = 'countdown';
+    this.doneAt = 0;
     this.phaseEndsAt = now() + COUNTDOWN_MS;
     this.startedAt = this.phaseEndsAt;
     this.endsAt = this.startedAt + this.challenge.seconds * 1000;
@@ -224,6 +229,7 @@ class Room {
 
   endRound() {
     this.phase = 'results';
+    this.doneAt = 0;
     this.phaseEndsAt = now() + RESULTS_MS;
     this.endsAt = Math.min(this.endsAt, now());
   }
@@ -239,7 +245,9 @@ class Room {
     } else if (this.phase === 'round') {
       const playing = this.claimed();
       const allDone = playing.length > 0 && playing.every((t) => this.cur(t).solved);
-      if (n >= this.endsAt || allDone) { this.endRound(); changed = true; }
+      if (allDone && !this.doneAt) { this.doneAt = n; changed = true; }
+      else if (!allDone && this.doneAt) { this.doneAt = 0; changed = true; }   // a team joined meanwhile
+      if (n >= this.endsAt || (this.doneAt && n - this.doneAt >= graceMs(this.challenge.level))) { this.endRound(); changed = true; }
     } else if (this.phase === 'results' && n >= this.phaseEndsAt) {
       if (this.round + 1 < this.list.length) this.beginCountdown(this.round + 1);
       else { this.phase = 'podium'; this.phaseEndsAt = 0; }

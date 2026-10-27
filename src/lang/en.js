@@ -381,4 +381,7 @@ export default {
   'pm.l0': 'Level 0 · fold the sequences',
   'pm.goal.0': 'Drop each sequence into the vessel of its structure.',
   'pm.prog.l0': 'Placed {j} / {n} · mistakes {m} · hints {h}',
+  'group.solved.next': '✓ Solved! +{n} pts — everyone is done. Next in {s} s',
+  'pm.alldone': 'Everyone solved it! Next in {n} s',
+  'menu.back': 'Back to menu',
 };

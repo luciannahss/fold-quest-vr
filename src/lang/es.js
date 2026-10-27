@@ -379,4 +379,7 @@ export default {
   'pm.l0': 'Nivel 0 · plegar secuencias',
   'pm.goal.0': 'Suelta cada secuencia en el recipiente de su estructura.',
   'pm.prog.l0': 'Colocadas {j} / {n} · errores {m} · pistas {h}',
+  'group.solved.next': '✓ ¡Resuelto! +{n} pts — todos terminaron. Siguiente en {s} s',
+  'pm.alldone': '¡Todos lo resolvieron! Siguiente en {n} s',
+  'menu.back': 'Volver al menú',
 };

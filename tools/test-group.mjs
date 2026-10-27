@@ -5,7 +5,7 @@ import { WebSocket } from '../server/node_modules/ws/wrapper.mjs';
 import { MARKER } from '../server/challenges.mjs';
 
 const PORT = 8799;
-const srv = spawn('node', ['server/server.mjs'], { env: { ...process.env, PORT: String(PORT), COUNTDOWN_MS: '300', RESULTS_MS: '400' }, stdio: ['ignore', 'pipe', 'inherit'] });
+const srv = spawn('node', ['server/server.mjs'], { env: { ...process.env, PORT: String(PORT), COUNTDOWN_MS: '300', RESULTS_MS: '400', GRACE_MS: '700' }, stdio: ['ignore', 'pipe', 'inherit'] });
 await new Promise((r) => srv.stdout.once('data', r));
 let bad = 0;
 const check = (c, m) => { if (!c) { bad++; console.log('✗', m); } else console.log('✓', m); };
@@ -69,6 +69,8 @@ check(pts >= 100 && pts <= 200 && a.judged.at(-1)?.points === pts, `points compu
 a.send({ type: 'solved', round: 0, mistakes: 0, hints: 0, total: 3 }); await sleep(100);
 check(host.state.teams[0].points === pts && host.state.teams[0].score === pts, 'second solve does not add points');
 b.send({ type: 'solved', round: 0, mistakes: 0, hints: 0, total: 3 });
+await until(() => host.state.graceEndsAt > 0);
+check(host.state.phase === 'round' && host.state.graceEndsAt > Date.now(), 'everyone solved: the round stays open for a grace period');
 await until(() => host.state.phase === 'results');
 check(host.state.teams[1].points > pts, 'clean run scores higher');
 await until(() => host.state.phase === 'countdown' && host.state.round === 1);

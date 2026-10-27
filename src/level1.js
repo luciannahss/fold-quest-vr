@@ -708,7 +708,7 @@ export class Level1 {
     const options = () => p.button(g.menuOpen ? tr('options.close') : tr('options'), w - 56 - 290, r2, 290, bh, () => g.toggleMenu(), { active: g.menuOpen, size: 32 });
     if (g.group.inRound) {         // group challenge: clock, score and progress; no restart / next
       const solved = this.groupSolved();
-      p.text(solved ? tr('group.solved', { n: g.group.myPoints, pts: g.group.myPoints }) : g.group.statusLine(this), 56, r1 - 58, { size: 30, weight: 700, color: solved ? THEME.good : THEME.text, maxW: w - 112 });
+      p.text(solved ? g.group.solvedLine() : g.group.statusLine(this), 56, r1 - 58, { size: 30, weight: 700, color: solved ? THEME.good : THEME.text, maxW: w - 112 });
       if (!solved) p.button(tr('hint'), 56, r1, 190, bh, () => this.hint());
       p.button(this.showAA ? tr('amino.hide') : tr('amino.show'), solved ? 56 : 266, r1, solved ? 420 : w - 56 - 266, bh, () => this.setAA(!this.showAA), { active: this.showAA, size: 29 });
       options();

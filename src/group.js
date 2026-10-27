@@ -132,6 +132,13 @@ export class Group {
   timeLeft() { const s = this.state; return s ? Math.max(0, s.endsAt - this.room.now()) : 0; }
   secondsLeft() { const s = this.state; return s ? Math.max(0, Math.ceil((s.phaseEndsAt - this.room.now()) / 1000)) : 0; }
 
+  /** footer line once this team has solved the puzzle (with the grace countdown when every team is done) */
+  solvedLine() {
+    const s = this.state;
+    const left = s?.graceEndsAt ? Math.max(0, Math.ceil((s.graceEndsAt - this.room.now()) / 1000)) : 0;
+    return left > 0 ? t('group.solved.next', { n: this.myPoints, s: left }) : t('group.solved', { n: this.myPoints });
+  }
+
   /** one line for the footer of the level boards while playing */
   statusLine(L) {
     const me = this.me;

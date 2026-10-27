@@ -392,7 +392,7 @@ export class Level3 {
     const options = () => p.button(g.menuOpen ? tr('options.close') : tr('options'), w - 56 - 290, r2, 290, bh, () => g.toggleMenu(), { active: g.menuOpen, size: 32 });
     if (g.group.inRound) {         // group challenge: clock, score and progress; the server moves to the next shadow
       const solved = this.groupSolved();
-      p.text(solved ? tr('group.solved', { n: g.group.myPoints }) : g.group.statusLine(this), 56, r1 - 58, { size: 30, weight: 700, color: solved ? THEME.good : THEME.text, maxW: w - 112 });
+      p.text(solved ? g.group.solvedLine() : g.group.statusLine(this), 56, r1 - 58, { size: 30, weight: 700, color: solved ? THEME.good : THEME.text, maxW: w - 112 });
       if (!solved) p.button(tr('hint'), 56, r1, 190, bh, () => this.hint(), { disabled: this.phase !== 'play' });
       options();
       return;
@@ -408,6 +408,7 @@ export class Level3 {
       options();
     } else {
       p.button(tr('play.again'), 56, r1, 300, bh, () => this.reset(), { primary: true });
+      p.button(tr('menu.back'), 56, r2, 330, bh, () => { g.menuOpen = true; g.redrawAll(); }, { size: 30 });   // the Options board lists the levels
       options();
     }
   }

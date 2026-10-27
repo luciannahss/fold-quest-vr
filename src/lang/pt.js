@@ -379,4 +379,7 @@ export default {
   'pm.l0': 'Nível 0 · dobrar sequências',
   'pm.goal.0': 'Solte cada sequência no recipiente da sua estrutura.',
   'pm.prog.l0': 'Colocadas {j} / {n} · erros {m} · dicas {h}',
+  'group.solved.next': '✓ Resolvido! +{n} pts — todos terminaram. Próximo em {s} s',
+  'pm.alldone': 'Todos resolveram! Próximo em {n} s',
+  'menu.back': 'Voltar ao menu',
 };
