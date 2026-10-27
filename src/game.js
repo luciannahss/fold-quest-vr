@@ -16,6 +16,8 @@ import { PROTEINS, COMPLEXES } from './proteins/index.js';
 import { t, LANGS, getLang, setLang } from './i18n.js';
 import { Group } from './group.js';
 import { SEQUENCES } from './sequences.js';
+import { Lab } from './lab.js';
+import { Gallery } from './gallery.js';
 
 const KINDS = {
   helix: { color: '#38e8ff', like: 'Ala (A), Leu (L), Glu (E), Met (M), Lys (K)', letters: 'ALEMK' },
@@ -100,6 +102,7 @@ export class Game {
     this.world.add(this.bursts.points);
 
     this.group = new Group(this);   // group challenge (headset side); inactive until a room is joined
+    this.lab = new Lab(this);       // Level 0 sequence lab (free play)
     this._buildVessels();
     this._buildTray();
     this._buildDemos();
@@ -112,7 +115,7 @@ export class Game {
   _buildLevels() {
     this.l1s = PROTEINS.map((pr, i) => new Level1(this, pr, i)); // one puzzle per protein
     this.l2s = COMPLEXES.map((pr, i) => new Level2(this, pr, i)); // Level 2: multi-chain complexes
-    this.l3s = [new Level3(this)];                                 // Level 3: the shadow quiz
+    this.l3s = [new Level3(this), new Gallery(this)];              // Level 3: the shadow quiz, and the free-play protein gallery
     this.l1 = this.l1s[0];                                         // `l1` is always the puzzle currently shown
   }
 
@@ -135,6 +138,7 @@ export class Game {
   /** Level 0: rewrite the current coach message in the new language (keeps the game state) */
   _refreshCoach() {
     if (this.phase === 'intro') { this.setStep(this.step); return; }
+    if (this.phase === 'lab') { this.lab.refreshText(); return; }
     if (this.phase === 'done') { this.coach = this._winCoach(); return; }
     this.coach = { title: t('play.title'), body: t('play.body', { input: this.inputHint() }), tone: 'info' };
     this.showHint = false;
@@ -305,11 +309,12 @@ export class Game {
       c.setBubble(true); c.setLabels(true); c.seqLabel.visible = true; c.refresh();
     }
     this.lastChain = null;
-    this.reveal = this.phase === 'play' ? this.reveal : 0;
+    this.reveal = this.phase === 'play' || this.phase === 'lab' ? this.reveal : 0;
   }
 
   restart() {
     if (this.group.active) return;   // no restarts during a group challenge
+    if (this.phase === 'lab') return this.lab.takeOut();
     if (this.level >= 1) return this.l1.reset();
     this.phase = 'intro'; this.step = 0; this.reveal = 0; this.showHint = false;
     this.resetPieces();
@@ -318,6 +323,7 @@ export class Game {
 
   /** n = 0..3; idx selects the protein / complex for Levels 1 and 2 */
   setLevel(n, idx = 0) {
+    if (this.phase === 'lab') this.lab.exit();
     this.level = n; this.menuOpen = false;
     this.l0.visible = n === 0;
     [...this.l1s, ...this.l2s, ...this.l3s].forEach((l) => (l.group.visible = false));
@@ -363,7 +369,7 @@ export class Game {
     }
     this.l0.visible = false;
     if (ch.level === 3) this.l3s[0].groupRound = ch.idx;   // Level 3: which shadow
-    this.setLevel(ch.level, ch.idx);
+    this.setLevel(ch.level, ch.level === 3 ? 0 : ch.idx);   // (Level 3: idx is the shadow, not the list position)
   }
 
   say(title, body, tone = 'info') { this.coach = { title, body, tone }; this.showHint = false; this.coachPanel.redraw(); }
@@ -373,6 +379,7 @@ export class Game {
   // ------------------------------------------------------------------ panels
   _drawCoach(p) {
     if (this.group.panelMode) return this.group.drawCoach(p);
+    if (this.phase === 'lab') return this.lab.drawCoach(p);
     if (this.level >= 1) return this.l1.drawCoach(p);
     const { w, h } = p;
     const c = this.coach;
@@ -406,6 +413,7 @@ export class Game {
       p.button(t('play.again'), 56, r1, 300, bh, () => { this.phase = 'play'; this.startPlay(); }, { primary: true });
       p.button(t('replay'), 380, r1, 360, bh, () => this.restart(), { size: 32 });
       p.button(t('next.level', { n: 1 }), 56, r2, 330, bh, () => this.setLevel(1), { primary: true, size: 30 });
+      p.button(t('lab.btn'), 56 + 330 + 12, r2, 232, bh, () => this.lab.enter(), { size: 24 });
       options();
     }
   }
@@ -431,6 +439,7 @@ export class Game {
   }
 
   _drawSide(p) {
+    if (this.phase === 'lab') return this.lab.drawSide(p);
     const { w } = p;
     const g = p.g;
     if (this.phase === 'intro') {
@@ -514,11 +523,15 @@ export class Game {
     if (!this.group.active) {      // free play: the level buttons (a group challenge picks the puzzles itself)
       p.text(t('menu.level'), 50, y, { size: 28, color: THEME.dim, weight: 700 }); y += 38;
       row([
-        { label: t('level', { n: 0 }), onClick: () => this.setLevel(0), active: this.level === 0 },
+        { label: t('level', { n: 0 }), onClick: () => this.setLevel(0), active: this.level === 0 && this.phase !== 'lab' },
         { label: t('level', { n: 1 }), onClick: () => this.setLevel(1, 0), active: this.level === 1 },
         { label: t('level', { n: 2 }), onClick: () => this.setLevel(2, 0), active: this.level === 2 },
-        { label: t('level', { n: 3 }), onClick: () => this.setLevel(3, 0), active: this.level === 3 },
-      ], y, 22); y += 82;
+        { label: t('level', { n: 3 }), onClick: () => this.setLevel(3, 0), active: this.level === 3 && !this.l1.isGallery },
+      ], y, 22); y += 80;
+      row([      // free play
+        { label: t('lab.title'), onClick: () => this.lab.enter(), active: this.phase === 'lab' },
+        { label: t('gal.title'), onClick: () => this.setLevel(3, 1), active: this.level === 3 && !!this.l1.isGallery },
+      ], y, 22); y += 80;
       if (this.level === 1 || this.level === 2) {
         const list = this.level === 1 ? this.l1s : this.l2s;
         row(list.map((l, i) => ({ label: l.protein.name, onClick: () => this.setLevel(this.level, i), active: this.l1 === l })), y, list.length > 3 ? 20 : 22);
@@ -534,7 +547,7 @@ export class Game {
   setMode(m, support) { this.mode = m; if (support) this.support = support; this.redrawAll(); if (this.step === STEPS.length - 1 && this.phase === 'intro') this.setStep(this.step); }
 
   hint() {
-    if (this.group.panelMode) return;
+    if (this.group.panelMode || this.phase === 'lab') return;
     if (this.level >= 1) return this.l1.hint();
     this.hintChain = this.lastChain || this.chains.find((c) => c.userData.state === 'tray');
     if (!this.hintChain) return;
@@ -547,7 +560,7 @@ export class Game {
   // ------------------------------------------------------------------ interaction
   /** pointers: [{ origin, dir, pressed, holdDelta, captured, hit, hitDist, haptic() }] in world space */
   handlePointers(pointers, raycaster, dt) {
-    const interactChains = this.phase === 'play' ? this.chains.filter((c) => ['tray', 'returning'].includes(c.userData.state)) : [];
+    const interactChains = this.phase === 'play' || this.phase === 'lab' ? this.chains.filter((c) => ['tray', 'returning'].includes(c.userData.state)) : [];
     const demoTargets = this.phase === 'intro' ? Object.values(this.demos).filter((c) => c.group.visible).map((c) => c.hit) : [];
     const targets = [...this.panels.filter((p) => p.mesh.visible).map((p) => p.mesh), ...interactChains.map((c) => c.hit), ...demoTargets];
     const hovBtn = new Map(this.panels.map((p) => [p, null]));
@@ -720,7 +733,7 @@ export class Game {
     const rv = ease(this.reveal);
     this.vessels.forEach((v) => { v.group.scale.setScalar(Math.max(0.001, rv)); v.group.visible = rv > 0.01; v.group.updateMatrix(); });
     this.shelf.visible = rv > 0.01; this.shelf.scale.setScalar(Math.max(0.001, rv));
-    this.pads.forEach((p) => (p.visible = rv > 0.05));
+    this.pads.forEach((p) => (p.visible = rv > 0.05 && this.phase !== 'lab'));
 
     this.updateDemo(dt);
     this.updateChains(dt, t, rv);
@@ -815,7 +828,7 @@ export class Game {
       body = t(both ? 'ok.sheet' : 'ok.strand', { seq: c.seq, top, n });
     } else { key = 'coil'; body = t('ok.coil', { seq: c.seq, top, n }); }
     this.say(t(`ok.${key}.title`), body, 'good');
-    if (this.chains.every((x) => x.userData.state === 'locked')) this.win();
+    if (this.phase !== 'lab' && this.chains.every((x) => x.userData.state === 'locked')) this.win();
   }
 
   win() {
@@ -869,7 +882,7 @@ export class Game {
 
   updatePanelsLive() {
     // keep the HUD counters fresh without redrawing every frame
-    const sig = this.level >= 1 ? 'L' + this.level + '|' + this.l1.sig() : `${this.placedCount}|${this.mistakes}|${this.phase}`;
+    const sig = this.level >= 1 ? 'L' + this.level + '|' + this.l1.sig() : `${this.placedCount}|${this.mistakes}|${this.phase}|${this.lab.seq}|${this.chains[0]?.userData.state}`;
     if (sig !== this._sig) { this._sig = sig; this.coachPanel.redraw(); this.sidePanel.redraw(); }
   }
 }

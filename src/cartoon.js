@@ -55,7 +55,7 @@ function ribbonGeometry(res, half, arrow, sp = 6) {
  * res: residues of the chain in local Angstrom (like Chain.res); ss: 'H' | 'E' | 'C' per residue.
  * scale: the display scale of the owning group (keeps ribbon / tube widths constant in the world).
  */
-export function makeCartoon(res, ss, scale = 1, base = null) {
+export function makeCartoon(res, ss, scale = 1, base = null, widths = null) {
   const group = new THREE.Group();
   const mk = (color) => new THREE.MeshStandardMaterial({ color: new THREE.Color(color), emissive: new THREE.Color(color), emissiveIntensity: 0.22, roughness: 0.4, metalness: 0.05, side: THREE.DoubleSide });
   // base colour (a whole chain in one hue): helices as given, strands a little darker, coils a little lighter
@@ -64,7 +64,8 @@ export function makeCartoon(res, ss, scale = 1, base = null) {
     ? { helix: mk(shade(base, 1)), strand: mk(shade(base, 0.78)), coil: mk(shade(base, 1.18)) }
     : { helix: mk(CARTOON_COLORS.helix), strand: mk(CARTOON_COLORS.strand), coil: mk(CARTOON_COLORS.coil) };
   // widths follow the protein's size (local units ~ Angstrom), with a gentle boost for big, small-scale complexes so they stay visible
-  const half = 0.0235 * Math.pow(1.15 / scale, 0.15), radius = 0.0083 * Math.pow(1.15 / scale, 0.4);
+  // (widths = { half, radius } in the group's local metres overrides this: the gallery draws true-to-size ribbons)
+  const half = widths?.half ?? 0.0235 * Math.pow(1.15 / scale, 0.15), radius = widths?.radius ?? 0.0083 * Math.pow(1.15 / scale, 0.4);
   const n = res.length;
   const elements = [];
   for (const [a, b] of runsOf(ss, 'H', 3)) elements.push({ type: 'helix', a, b });

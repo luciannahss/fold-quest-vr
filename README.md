@@ -13,6 +13,8 @@ A browser-based WebXR game that teaches **how proteins fold, assemble and work**
    * wrong shape → it tries, residues that don't fit glow red, then it is pushed back out; the coach explains why
 3. Fill the α-helix, β-sheet (two strands) and coil vessels. Stars depend on mistakes; **Hint** shows propensity bars.
 
+**Sequence lab** (Level 0, free play; Options → *Lab*, or the *Sequence lab* button after finishing Level 0): build your own 9-residue sequence with the 20 amino-acid keys (coloured by chemistry), see the Chou–Fasman propensities for helix / sheet / coil and which shape each residue favours, then grab the chain and drop it into a vessel: it folds if the sequence prefers that shape, otherwise the game explains why not. *Example* and *Random* fill in a sequence; *Take it out* lets you try another vessel. Code: `src/lab.js`.
+
 **Level 1 — Build real proteins** (structures from the PDB): crambin (1CRN, 5 pieces), ubiquitin (1UBQ, 7 pieces), then myoglobin (1MBN, 8 helix pieces)
 
 The 46-residue crambin structure is cut at its secondary-structure boundaries into 5 pieces: β-strand 1 + loop (1–6),
@@ -41,6 +43,8 @@ docks can be done in any order, and the bound ligands (the four hemes of hemoglo
 A complex can tune interface detection with `ifaceDist` / `minIface` (the antibody uses 8 Å because antigen contacts are small).
 Add a complex: generate data with `node tools/prep-pdb.mjs data/XXXX.pdb A,B,C,D src/proteins/xxxx.js` (later chains get residue
 numbers +1000, +2000…) and add it to `COMPLEXES` in `src/proteins/index.js`; `?level=2` opens it.
+
+**Protein gallery** (Level 3, free play; Options → *Protein gallery*, or the *Gallery* button after Level 3): browse the 12 proteins of the quiz, turn them around (grab and rotate), read what each one does and its size, and switch between the **Surface**, the **Cartoon** (helices cyan, strands magenta, coils yellow) or **Both** (a see-through surface around the cartoon). All proteins are shown at the same size. Code: `src/gallery.js`; the cartoons are compact backbone files `src/cartoons/<name>.bin` made by `node tools/make-cartoon.mjs --all` (same frame and scale as the surfaces, so they overlay exactly).
 
 **Level 3 — Who's that protein?** (the last level)
 
@@ -103,6 +107,8 @@ Test without a headset: open `http://localhost:8080/?iwer` (Meta Quest 3 emulato
 | `src/chemistry.js` | NeRF backbone builder from φ/ψ angles, H-bond detection, sheet-lane optimiser, Chou–Fasman propensities |
 | `src/chain.js` | A foldable peptide: instanced atoms/bonds, ribbon, torsion interpolation, coil sampling |
 | `src/vessels.js` | Template vessels built from the *same* geometry as the chains (so a correct chain fits exactly) |
+| `src/gallery.js`, `src/cartoons/` | Level 3 protein gallery (surface / cartoon / both) and its backbone data (`tools/make-cartoon.mjs`) |
+| `src/lab.js` | Level 0 sequence lab (keypad + analysis boards; reuses Level 0's chain, vessels and fold-or-reject logic) |
 | `src/game.js` | Level 0 flow, grab/drop, fit-or-reject logic, feedback text, panels, level switching |
 | `src/level1.js` | Level 1: pieces, connectors, cluster snapping, hints, disulfide finale |
 | `src/level2.js`, `src/cartoon.js` | Level 2 (extends Level 1): interface patches, docking rules; static cartoon builder for multi-element chains |

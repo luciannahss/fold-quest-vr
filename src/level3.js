@@ -99,7 +99,7 @@ const outlineMat = new THREE.ShaderMaterial({
   vertexShader: 'uniform float uThick; void main() { vec3 p = position + normal * uThick; gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0); }',
   fragmentShader: 'uniform vec3 uColor; uniform float uOpacity; void main() { gl_FragColor = vec4(uColor, uOpacity); }',
 });
-const makeOutline = (geo, fade = false) => {
+export const makeOutline = (geo, fade = false) => {
   const mat = outlineMat.clone(); mat.transparent = fade; // opaque outlines depth-sort correctly behind their model
   return new THREE.Mesh(geo, mat);
 };
@@ -418,6 +418,7 @@ export class Level3 {
     } else {
       p.button(tr('play.again'), 56, r1, 300, bh, () => this.reset(), { primary: true });
       p.button(tr('menu.back'), 56, r2, 330, bh, () => { g.menuOpen = true; g.redrawAll(); }, { size: 30 });   // the Options board lists the levels
+      p.button(tr('gal.btn'), 56 + 330 + 12, r2, 232, bh, () => g.setLevel(3, 1), { size: 26 });             // free play: browse all the proteins
       options();
     }
   }
