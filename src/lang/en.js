@@ -384,4 +384,6 @@ export default {
   'group.solved.next': '✓ Solved! +{n} pts — everyone is done. Next in {s} s',
   'pm.alldone': 'Everyone solved it! Next in {n} s',
   'menu.back': 'Back to menu',
+  'l3.auto': 'Next shadow starts in {n} s',
+  'l3.auto.finish': 'Finishing in {n} s',
 };

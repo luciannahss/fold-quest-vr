@@ -10,6 +10,7 @@ import { POOL, ROUNDS, CATEGORIES } from './surfaces/info.js';
 import { t as tr } from './i18n.js';
 
 export const STAGE = new THREE.Vector3(0, 1.68, -1.95);     // centre of the shadow
+const AUTO_NEXT_S = 12;                             // free play: seconds to read the facts before the next shadow starts by itself
 const DROP_R = 0.62;                                // metres: drop a card this close to the shadow to guess
 const ease = (t) => (t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t));
 const _v = new THREE.Vector3(), _q = new THREE.Quaternion();
@@ -160,6 +161,7 @@ export class Level3 {
 
   // ------------------------------------------------------------------ flow
   reset() {
+    this.autoAt = 0;
     this.round = 0; this.mistakes = 0; this.hints = 0; this.solved = ROUNDS.map(() => false);
     this.phase = 'loading';
     this.say(tr('l3.name'), tr('l3.loading'));
@@ -170,6 +172,7 @@ export class Level3 {
   }
 
   async startRound(i) {
+    this.autoAt = 0;
     this.round = i; this.roundHints = 0; this.phase = 'play';
     const R = ROUNDS[i];
     const target = await loadSurface(R.target);
@@ -221,7 +224,9 @@ export class Level3 {
   }
 
   say(title, body, tone = 'info') { this.coach = { title, body, tone }; this.game.coachPanel.redraw(); }
-  sig() { return `${this.round}|${this.phase}|${this.mistakes}|${this.hints}|${this.solved.filter(Boolean).length}`; }
+  sig() { return `${this.round}|${this.phase}|${this.mistakes}|${this.hints}|${this.solved.filter(Boolean).length}|${this.autoLeft()}`; }
+  /** seconds until the next shadow starts by itself (0 = not counting; a group challenge is paced by the server) */
+  autoLeft() { return this.phase === 'revealed' && this.autoAt && !this.game.group.active ? Math.max(0, Math.ceil(this.autoAt - this.t)) : 0; }
   get joined() { return this.solved.filter(Boolean).length; }
   get nJ() { return 1; }
   /** group challenge: the shadow was guessed */
@@ -244,6 +249,7 @@ export class Level3 {
     const R = ROUNDS[this.round];
     if (card.id === R.target) {
       this.phase = 'revealed'; this.solved[this.round] = true;
+      this.autoAt = this.t + AUTO_NEXT_S;
       sfx.good();
       this.revealT = 0;
       card.state = 'gone'; card.t = 0;
@@ -349,6 +355,7 @@ export class Level3 {
   update(dt, t, pointers, raycaster) {
     this.t = t;
     this.handlePointers(pointers, raycaster, dt);
+    if (this.phase === 'revealed' && this.autoAt && !this.game.group.active && this.t >= this.autoAt) { this.autoAt = 0; this.next(); }   // same as pressing Next
     for (const c of this.cards) {
       const g = c.group;
       if (c.state === 'idle') { g.position.copy(c.home); g.position.y += Math.sin(t * 1.5 + c.home.x * 3) * 0.012; g.scale.setScalar(1); }
@@ -404,6 +411,8 @@ export class Level3 {
       options();
     } else if (this.phase === 'revealed') {
       const last = this.round === ROUNDS.length - 1;
+      const left = this.autoLeft();
+      if (left > 0) p.text(tr(last ? 'l3.auto.finish' : 'l3.auto', { n: left }), 56, r1 - 58, { size: 30, weight: 700, color: THEME.warn, maxW: w - 112 });
       p.button(tr(last ? 'l3.finish' : 'l3.nextshadow'), 56, r1, 330, bh, () => this.next(), { primary: true });
       options();
     } else {

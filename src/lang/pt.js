@@ -382,4 +382,6 @@ export default {
   'group.solved.next': '✓ Resolvido! +{n} pts — todos terminaram. Próximo em {s} s',
   'pm.alldone': 'Todos resolveram! Próximo em {n} s',
   'menu.back': 'Voltar ao menu',
+  'l3.auto': 'A próxima sombra começa em {n} s',
+  'l3.auto.finish': 'Concluindo em {n} s',
 };
