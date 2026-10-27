@@ -14,6 +14,7 @@ import { POOL, CATEGORIES } from './surfaces/info.js';
 const CENTER = new THREE.Vector3(0, 1.5, -1.35);   // where the protein floats
 const RADIUS = 0.5;                                 // metres: every protein is shown at the same size (the facts give the real size)
 const MODES = ['surface', 'cartoon', 'both'];
+const ZOOM_MIN = 0.4, ZOOM_MAX = 3;                 // x the default size
 const IDS = Object.keys(POOL);
 
 // ---------------------------------------------------------------- cartoon data ('CRT1' files from tools/make-cartoon.mjs)
@@ -68,7 +69,7 @@ export class Gallery {
     this.protein = { name: t('gal.title'), id: 'gallery' };
     this.group = new THREE.Group(); this.group.visible = false;
     game.world.add(this.group);
-    this.sel = 0; this.mode = 'surface';
+    this.sel = 0; this.mode = 'surface'; this.zoom = 1;
     this.items = new Map();                           // id -> { surf, surfMesh, outline, cartoon } once loaded
     this.rot = new THREE.Quaternion(); this.held = false; this.t = 0;
     this.model = new THREE.Group(); this.model.position.copy(CENTER); this.group.add(this.model);
@@ -86,7 +87,7 @@ export class Gallery {
   // ------------------------------------------------------------------ level interface (see Game)
   reset() { this.select(this.sel); }
   hint() { this.select((this.sel + 1) % IDS.length); }          // the Hint key ('H') = next protein
-  sig() { return `${this.sel}|${this.mode}|${this.loading ? 1 : 0}`; }
+  sig() { return `${this.sel}|${this.mode}|${this.loading ? 1 : 0}|${Math.round(this.zoom * 100)}`; }
   get joined() { return 0; } get nJ() { return 1; } get mistakes() { return 0; } get hints() { return 0; }
   groupSolved() { return false; }
 
@@ -99,6 +100,8 @@ export class Gallery {
     this._show();
     this.game.redrawAll();
   }
+
+  setZoom(z) { this.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z)); }
 
   setMode(m) { this.mode = m; this._show(); this.game.redrawAll(); }
 
@@ -132,6 +135,14 @@ export class Gallery {
     const targets = [...g.panels.filter((p) => p.mesh.visible).map((p) => p.mesh), this.hit];
     const hovBtn = new Map(g.panels.map((p) => [p, null]));
     this.hovered = false;
+    // two hands (or two triggers) holding the protein = pinch-zoom: moving them apart / together scales it
+    const holders = pointers.filter((q) => q.pressed && q.holding?.isGallery);
+    const two = holders.length >= 2;
+    if (two) {
+      const d = holders[0].origin.distanceTo(holders[1].origin);
+      if (!this._pinch) this._pinch = { d, z: this.zoom };
+      else if (d > 0.02) this.setZoom(this.zoom + (this._pinch.z * (d / this._pinch.d) - this.zoom) * 0.35);   // smoothed: hand tracking jitters
+    } else if (this._pinch) { this._pinch = null; holders.forEach((q) => (q._rot = null)); pointers.forEach((q) => (q._rot = null)); }   // back to one hand: re-anchor the turn, no jump
     for (const ptr of pointers) {
       if (ptr.holding && !ptr.holding.isGallery) ptr.holding = null;
       const was = ptr.prevPressed;
@@ -149,17 +160,19 @@ export class Gallery {
       if (ptr.pressed && !was) {
         sfx.unlock();
         if (btn && !btn.disabled) { sfx.click(); ptr.haptic?.(0.4, 30); ptr.captured = true; btn.onClick(); }
-        else if (model) { ptr.holding = { isGallery: true, isDemo: true }; ptr._rot = null; this.held = true; ptr.captured = true; sfx.grab(); ptr.haptic?.(0.4, 40); }   // isDemo: left-drag on a flat screen turns it
+        else if (model || (this.held && !btn)) { ptr.holding = { isGallery: true, isDemo: true }; ptr._rot = null; ptr.captured = true; sfx.grab(); ptr.haptic?.(0.4, 40); }   // isDemo: left-drag on a flat screen turns it; a 2nd hand pinching anywhere joins the first (zoom)
         else ptr.captured = !!(hits.length && hits[0].object.userData.panel);
       }
       if (!ptr.pressed) ptr.captured = false;
       if (ptr.holding) {
-        applyRotation(ptr, this.rot, g.world.quaternion, true);            // turntable: the protein turns with the hand
+        if (!two) applyRotation(ptr, this.rot, g.world.quaternion, true);   // turntable: the protein turns with the hand (frozen while two hands zoom)
+        if (ptr.holdDelta) this.setZoom(this.zoom * Math.exp(ptr.holdDelta * 1.5));   // mouse wheel / thumbstick while holding = zoom
         ptr.hit = g.world.localToWorld(CENTER.clone()); ptr.hitDist = ptr.origin.distanceTo(ptr.hit);
-        if (!ptr.pressed) { ptr.holding = null; this.held = false; ptr._rot = null; }
+        if (!ptr.pressed) { ptr.holding = null; ptr._rot = null; }
       }
       ptr.prevPressed = ptr.pressed;
     }
+    this.held = pointers.some((q) => q.holding?.isGallery);
     for (const [pan, label] of hovBtn) pan.setHover(label);
   }
 
@@ -168,7 +181,8 @@ export class Gallery {
     this.handlePointers(pointers, raycaster, dt);
     if (!this.held) this.rot.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), dt * 0.25));   // slow turntable
     this.model.quaternion.copy(this.rot);
-    this.model.scale.setScalar(this.hovered || this.held ? 1.03 : 1);
+    this.model.scale.setScalar(this.zoom * (this.hovered || this.held ? 1.03 : 1));
+    this.hit.scale.setScalar(this.zoom);
   }
 
   // ------------------------------------------------------------------ boards
@@ -187,8 +201,13 @@ export class Gallery {
       g.fillStyle = CATEGORIES[info.category].color; g.fillRect(x + 12, y + 12, 9, ch - 24);
     });
     const r1 = h - 196, r2 = h - 100, bh = 78;
-    p.button('◀', 56, r1, 150, bh, () => this.select(this.sel - 1), { size: 36 });
-    p.button('▶', 56 + 162, r1, 150, bh, () => this.select(this.sel + 1), { size: 36 });
+    p.button('◀', 56, r1, 120, bh, () => this.select(this.sel - 1), { size: 36 });
+    p.button('▶', 56 + 132, r1, 120, bh, () => this.select(this.sel + 1), { size: 36 });
+    // zoom: − / reset (shows the percentage) / +
+    const zx = 56 + 2 * 132 + 40;
+    p.button('−', zx, r1, 110, bh, () => this.setZoom(this.zoom / 1.25), { size: 44, disabled: this.zoom <= ZOOM_MIN + 1e-6 });
+    p.button(`${Math.round(this.zoom * 100)}%`, zx + 122, r1, 170, bh, () => this.setZoom(1), { size: 30 });
+    p.button('+', zx + 304, r1, 110, bh, () => this.setZoom(this.zoom * 1.25), { size: 44, disabled: this.zoom >= ZOOM_MAX - 1e-6 });
     p.button(t('level', { n: 3 }), 56, r2, 280, bh, () => game.setLevel(3, 0), { size: 28 });
     p.button(game.menuOpen ? t('options.close') : t('options'), w - 56 - 290, r2, 290, bh, () => game.toggleMenu(), { active: game.menuOpen, size: 32 });
   }

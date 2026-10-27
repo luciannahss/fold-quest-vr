@@ -412,6 +412,6 @@ export default {
   'gal.stats': 'Subunits: {n} · Residues: {r}',
   'gal.size': 'Size: about {a} × {b} × {c} Å',
   'gal.legend': 'Cartoon colours',
-  'gal.grab': 'Grab the protein to turn it and look from every side. All proteins are shown at the same size here.',
+  'gal.grab': 'Grab the protein to turn it and look from every side. Zoom with − / +, with the mouse wheel / thumbstick while you hold it, or pinch with both hands and move them apart or together.',
   'gal.loading': 'Loading…',
 };

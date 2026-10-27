@@ -410,6 +410,6 @@ export default {
   'gal.stats': 'Subunidades: {n} · Residuos: {r}',
   'gal.size': 'Tamaño: unos {a} × {b} × {c} Å',
   'gal.legend': 'Colores del cartoon',
-  'gal.grab': 'Agarra la proteína para girarla y verla desde todos los lados. Aquí todas se muestran del mismo tamaño.',
+  'gal.grab': 'Agarra la proteína para girarla y verla desde todos los lados. Haz zoom con − / +, con la rueda del ratón / el joystick mientras la sujetas, o pellizca con las dos manos y sepáralas o júntalas.',
   'gal.loading': 'Cargando…',
 };
