@@ -1,0 +1,15 @@
+# Render blueprint for the group challenge room server (free plan).
+services:
+  - type: web
+    name: foldquest-group
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install --omit=dev
+    startCommand: node server.mjs
+    healthCheckPath: /healthz
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: ALLOWED_ORIGINS
+        value: https://luciannahss.github.io
