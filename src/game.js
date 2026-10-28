@@ -84,7 +84,7 @@ export class Game {
     this.sheet = optimizeSheet();
     this.mode = 'desktop';
     this.support = { vr: false, ar: false };
-    this.hooks = { switchMode: () => {}, setFloor: () => {}, setHeight: () => {} };
+    this.hooks = { switchMode: () => {}, setFloor: () => {}, setHeight: () => {}, recenter: () => {} };
     this.floor = 'hex';
     this.heightOffset = 0;
     this.phase = 'intro';
@@ -635,7 +635,8 @@ export class Game {
     row([
       { label: '−', onClick: () => this.setHeight(this.heightOffset - 0.1) },
       { label: '+', onClick: () => this.setHeight(this.heightOffset + 0.1) },
-    ], y, 38); y += 84;
+      { label: t('menu.center'), onClick: () => this.hooks.recenter(), disabled: this.mode === 'desktop' },   // in VR: put the whole scene in front of you again
+    ], y, 30); y += 84;
     p.text(t('menu.lang'), 50, y, { size: 28, color: THEME.dim, weight: 700 }); y += 38;
     row(LANGS.map((l) => ({ label: l.name, onClick: () => this.changeLang(l.code), active: getLang() === l.code, disabled: this.group.inRound })), y, 24); y += 84;
     if (!this.group.active) {      // free play: the level buttons (a group challenge picks the puzzles itself)

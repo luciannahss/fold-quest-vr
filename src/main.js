@@ -117,6 +117,7 @@ async function switchMode(m) {
 game.hooks.switchMode = (m) => switchMode(m);
 game.hooks.setFloor = (f) => { env.setFloor(f); try { localStorage.setItem('floor', f); } catch { /* ignore */ } };
 game.hooks.setHeight = () => { /* applied per frame */ };
+game.hooks.recenter = () => { if (renderer.xr.isPresenting) xrPlaceWorld(); };   // Options > Center: the scene moves to where you are and faces where you look
 try { const f = localStorage.getItem('floor'); if (f) { game.floor = f; env.setFloor(f); } } catch { /* ignore */ }
 
 $('btn-vr').onclick = () => switchMode('vr');

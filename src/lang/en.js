@@ -419,4 +419,5 @@ export default {
   'stage.body': 'Which of the sequences on the rack prefer this shape? Drop the right ones into the vessel — the others are pushed back out. {rule}\n{input}',
   'stage.done': '✓ {kind} stage complete! Next: {next}. The sequences you placed go back to the rack, so stay alert.',
   'stage.continue': 'Continue  ▶',
+  'menu.center': 'Center',
 };

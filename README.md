@@ -88,7 +88,7 @@ The group server (`server/`) runs on [Render](https://render.com) (free): **New 
 | Passthrough (MR) | Quest 3 mixed reality, molecules float in your room |
 | Flat screen | mouse: drag to grab, wheel = push/pull (or zoom), drag background to look |
 
-You can switch modes from the in-world **Controls** panel (left) or from the page. Floor style and height offset (seated/standing) are there too.
+You can switch modes from the in-world **Options** board (left) or from the page. Floor style, height offset (seated/standing) and **Center** are there too: in VR, *Center* moves the whole scene to where you are and turns it to face where you are looking (use it after you walk or turn around).
 
 ## Run
 ```bash

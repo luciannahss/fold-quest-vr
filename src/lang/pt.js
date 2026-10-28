@@ -417,4 +417,5 @@ export default {
   'stage.body': 'Quais das sequências da prateleira preferem esta forma? Solte as certas no recipiente; as outras são empurradas para fora. {rule}\n{input}',
   'stage.done': '✓ Etapa de {kind} concluída! Próxima: {next}. As sequências que você colocou voltam para a prateleira: atenção.',
   'stage.continue': 'Continuar  ▶',
+  'menu.center': 'Centralizar',
 };

@@ -417,4 +417,5 @@ export default {
   'stage.body': '¿Cuáles de las secuencias del estante prefieren esta forma? Suelta las correctas en el recipiente; las demás son empujadas hacia fuera. {rule}\n{input}',
   'stage.done': '✓ ¡Etapa de {kind} completada! Siguiente: {next}. Las secuencias que colocaste vuelven al estante: atención.',
   'stage.continue': 'Continuar  ▶',
+  'menu.center': 'Centrar',
 };
