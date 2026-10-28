@@ -65,6 +65,7 @@ export class Level1 {
     this.clusters = [];
     this.junctionDone = Array(this.nJ).fill(false);
     this.pulse = null; this.ghostUntil = 0;
+    this.zoom = 1;                       // size of the finished protein (two-hand pinch), 1 while building
 
     this._buildPieces();
     this._buildWholeHandle();
@@ -131,6 +132,7 @@ export class Level1 {
     let r = 0;
     for (const res of this.protein.data.residues) r = Math.max(r, Math.hypot(res.CA[0], res.CA[1], res.CA[2]));
     r = r * K * this.S + 0.1;
+    this.hitR = r;
     this.hitAll = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshBasicMaterial({ color: 0x38e8ff, transparent: true, opacity: 0.07, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
     this.hitAll.scale.setScalar(r);
     this.hitAll.visible = false;           // only drawn while hovered / held (raycasts ignore visibility)
@@ -247,12 +249,13 @@ export class Level1 {
     this.ligandGroup = null; this.ligP = 0;
     const lig = this.protein.data.ligand || [];
     if (!lig.length) return;
-    const COL = { FE: 0xff7a1a, C: 0xd11d33, N: 0x3b6bff, O: 0xff8a5a };
+    const sty = this.protein.ligandStyle || {};   // optional colours (hemoglobin's hemes are green to stand out)
+    const COL = { FE: 0xff7a1a, C: sty.C ?? 0xd11d33, N: sty.N ?? 0x3b6bff, O: 0xff8a5a };
     const RAD = { FE: 0.02, C: 0.0105, N: 0.0115, O: 0.0115 };
     const group = new THREE.Group();
     const sph = new THREE.SphereGeometry(1, 14, 10), cyl = new THREE.CylinderGeometry(1, 1, 1, 8, 1, true);
     const pts = lig.map((a) => v3(a.p).multiplyScalar(K));
-    const mat = new THREE.MeshStandardMaterial({ roughness: 0.35, emissive: 0x330008, emissiveIntensity: 0.6 });
+    const mat = new THREE.MeshStandardMaterial({ roughness: 0.35, emissive: sty.emissive ?? 0x330008, emissiveIntensity: 0.6 });
     const atoms = new THREE.InstancedMesh(sph, mat, lig.length);
     const m = new THREE.Matrix4();
     lig.forEach((a, i) => {
@@ -266,7 +269,7 @@ export class Level1 {
       const fe = lig[i].e === 'FE' || lig[j].e === 'FE';
       if (d > 0.5 && d < (fe ? 2.4 : 1.75)) bonds.push([i, j]);
     }
-    const bmesh = new THREE.InstancedMesh(cyl, new THREE.MeshStandardMaterial({ color: 0xe8b0b8, roughness: 0.5 }), bonds.length);
+    const bmesh = new THREE.InstancedMesh(cyl, new THREE.MeshStandardMaterial({ color: sty.bond ?? 0xe8b0b8, roughness: 0.5 }), bonds.length);
     bonds.forEach(([i, j], k) => {
       const mid = pts[i].clone().add(pts[j]).multiplyScalar(0.5), dir = pts[j].clone().sub(pts[i]), len = dir.length();
       bmesh.setMatrixAt(k, m.compose(mid, new THREE.Quaternion().setFromUnitVectors(UPY, dir.normalize()), new THREE.Vector3(0.0035, len, 0.0035)));
@@ -297,15 +300,16 @@ export class Level1 {
         quat = _q.slerpQuaternions(p.blend.quat, cl.quat, e);
         if (p.blend.t >= 1) p.blend = null;
       }
-      const g = p.chain.group;
+      const g = p.chain.group, z = this.zoom;
+      g.scale.setScalar(this.S * z);
       g.quaternion.copy(quat);
-      g.position.copy(p.off).applyQuaternion(quat).add(pos);
+      g.position.copy(p.off).multiplyScalar(z).applyQuaternion(quat).add(pos);
     }
   }
 
   // ------------------------------------------------------------------ flow
   reset() {
-    this.phase = 'play'; this.mistakes = 0; this.hints = 0;
+    this.phase = 'play'; this.mistakes = 0; this.hints = 0; this.zoom = 1; this._pinch = null;
     this.setAA(false);
     this.junctionDone = Array(this.nJ).fill(false);
     this.insightsShown = new Set();
@@ -397,6 +401,20 @@ export class Level1 {
     this.whole.hover = false;
     const hovBtn = new Map(g.panels.map((p) => [p, null]));
     this.pieces.forEach((p) => (p.hover = false));
+    // finished protein held with two hands (or two triggers): moving the hands apart / together zooms it
+    const holders = this.phase === 'done' ? pointers.filter((q) => q.pressed && q.holding === this.whole) : [];
+    const two = holders.length >= 2;
+    if (two) {
+      const d = holders[0].origin.distanceTo(holders[1].origin);
+      if (!this._pinch) this._pinch = { d, z: this.zoom };
+      else if (d > 0.02) {
+        this.zoom += (Math.min(3, Math.max(0.4, this._pinch.z * (d / this._pinch.d))) - this.zoom) * 0.35;   // smoothed: hand tracking jitters
+        if (this.clusters[0]) this.place(this.clusters[0]);
+      }
+    } else if (this._pinch) {                                       // back to one hand: take hold again from where the protein is, no jump
+      this._pinch = null;
+      pointers.forEach((q) => { q._rot = null; if (q.pressed && q.holding === this.whole) this.grab(this.whole, q); });
+    }
     for (const ptr of pointers) {
       if (ptr.holding && !ptr.holding.isPiece) ptr.holding = null;
       const was = ptr.prevPressed;
@@ -415,12 +433,17 @@ export class Level1 {
         sfx.unlock();
         if (btn && !btn.disabled) { sfx.click(); ptr.haptic?.(0.4, 30); ptr.captured = true; btn.onClick(); }
         else if (piece) { this.grab(piece, ptr); ptr.captured = true; }
+        else if (this.phase === 'done' && this.whole.held && !btn) { this.grab(this.whole, ptr); ptr.captured = true; }   // a 2nd hand pinching anywhere joins the first (zoom)
         else ptr.captured = !!(hits.length && hits[0].object.userData.panel);
       }
       if (!ptr.pressed) ptr.captured = false;
-      if (ptr.holding) this.hold(ptr, dt);
+      if (ptr.holding) {
+        if (two && ptr.holding === this.whole) { /* two hands: zooming, the protein itself stays put */ }
+        else this.hold(ptr, dt);
+      }
       ptr.prevPressed = ptr.pressed;
     }
+    if (this.phase === 'done') this.whole.held = pointers.some((q) => q.holding === this.whole);
     for (const [pan, label] of hovBtn) pan.setHover(label);
     this.hitAll.visible = this.phase === 'done' && (this.whole.hover || this.whole.held);
     for (const p of this.pieces) {
@@ -642,11 +665,11 @@ export class Level1 {
       const show = this.phase === 'done' || (this.seal && this.seal.t > 1.6);
       this.ligP = show ? Math.min(1, this.ligP + dt * 1.6) : 0;
       this.ligandGroup.visible = this.ligP > 0;
-      this.ligandGroup.scale.setScalar(this.S * ease(this.ligP));
+      this.ligandGroup.scale.setScalar(this.S * this.zoom * ease(this.ligP));
       const c0 = this.clusters[0];
       if (c0 && this.ligP > 0) { this.ligandGroup.position.copy(c0.pos); this.ligandGroup.quaternion.copy(c0.quat); } // follows the protein
     }
-    if (this.phase === 'done' && this.clusters[0]) this.hitAll.position.copy(this.clusters[0].pos);
+    if (this.phase === 'done' && this.clusters[0]) { this.hitAll.position.copy(this.clusters[0].pos); this.hitAll.scale.setScalar(this.hitR * this.zoom); }
     // tags follow pieces
     for (const p of this.pieces) {
       p.tag.position.copy(p.chain.group.position); p.tag.position.y += p.rad + 0.1;
@@ -673,7 +696,7 @@ export class Level1 {
   sgWorld(resNo) {
     const p = this.pieceOf(resNo), r = p.chain.res[resNo - p.def.from];
     const g = p.chain.group;
-    return r.R.clone().multiplyScalar(K * this.S).applyQuaternion(g.quaternion).add(g.position);
+    return r.R.clone().multiplyScalar(K * this.S * this.zoom).applyQuaternion(g.quaternion).add(g.position);
   }
 
   updateBridges() {
@@ -683,12 +706,12 @@ export class Level1 {
       if (!b.mesh.visible) continue;
       const A = this.sgWorld(b.a), B = this.sgWorld(b.b);
       b.halos[0].position.copy(A); b.halos[1].position.copy(B);
-      b.halos.forEach((h) => h.scale.setScalar(0.8 + 0.25 * Math.sin(this.t * 5 + b.a)));
+      b.halos.forEach((h) => h.scale.setScalar((0.8 + 0.25 * Math.sin(this.t * 5 + b.a)) * this.zoom));
       const end = _v.lerpVectors(A, B, b.progress);
       const len = A.distanceTo(end);
       b.mesh.position.copy(A).add(end).multiplyScalar(0.5);
       b.mesh.quaternion.setFromUnitVectors(UPY, _v2.subVectors(end, A).normalize());
-      b.mesh.scale.set(0.011, Math.max(len, 0.0001), 0.011);
+      b.mesh.scale.set(0.011 * this.zoom, Math.max(len, 0.0001), 0.011 * this.zoom);
     }
   }
 
@@ -721,7 +744,7 @@ export class Level1 {
       p.button(this.showAA ? tr('amino.hide') : tr('amino.show'), 526, r1, w - 56 - 526, bh, () => this.setAA(!this.showAA), { active: this.showAA, size: 29 });
       options();
     } else {
-      p.text(tr('l1.turn'), 56, r1 - 58, { size: 28, color: THEME.warn, maxW: w - 112 });
+      p.text(tr('l1.turn'), 56, r1 - 94, { size: 26, color: THEME.warn, maxW: w - 112 });   // (up to two lines)
       p.button(tr('play.again'), 56, r1, 300, bh, () => this.reset(), { primary: true });
       p.button(this.showAA ? tr('amino.hide') : tr('amino.show'), 380, r1, w - 56 - 380, bh, () => this.setAA(!this.showAA), { active: this.showAA, size: 29 });
       const nx = this.nextTarget();

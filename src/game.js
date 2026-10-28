@@ -30,6 +30,8 @@ const kname = (k) => t(`kind.${k}.name`);
 const _tmp = new THREE.Vector3();
 const _qa = new THREE.Quaternion(), _qb = new THREE.Quaternion(), _up = new THREE.Vector3(0, 1, 0), _right = new THREE.Vector3(1, 0, 0);
 const hexNum = (s) => parseInt(s.slice(1), 16);
+const STAGE_KINDS = ['helix', 'strand', 'coil'];        // solo Level 0 is played one structure at a time, in this order
+const STAGE_CENTER = new THREE.Vector3(0, 1.5, -1.45);   // where the vessel of the current stage stands
 const TRAY_SCALE = 1.3;
 const ease = (t) => (t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t));
 const clamp01 = (t) => Math.min(1, Math.max(0, t));
@@ -87,6 +89,7 @@ export class Game {
     this.heightOffset = 0;
     this.phase = 'intro';
     this.step = 0;
+    this.staged = false; this.stage = 0; this.stageDoneT = -1;   // solo Level 0: one structure at a time (helix, then sheet, then coil)
     this.mistakes = 0;
     this.hintCount = 0;
     this.coach = { title: '', body: '', tone: 'info' };
@@ -139,6 +142,7 @@ export class Game {
   _refreshCoach() {
     if (this.phase === 'intro') { this.setStep(this.step); return; }
     if (this.phase === 'lab') { this.lab.refreshText(); return; }
+    if (this.phase === 'play' && this.staged) { this.coach = this._stageCoach(); this.showHint = false; return; }
     if (this.phase === 'done') { this.coach = this._winCoach(); return; }
     this.coach = { title: t('play.title'), body: t('play.body', { input: this.inputHint() }), tone: 'info' };
     this.showHint = false;
@@ -152,6 +156,8 @@ export class Game {
       v.group.position.set(x, 1.5, -1.45 + Math.abs(x) * 0.2);
       v.group.rotation.y = yaw;
       v.group.updateMatrix();
+      v.homePos = v.group.position.clone(); v.homeYaw = yaw;   // classic layout: three vessels side by side
+      v.show = 1; v.activeTarget = true;                        // staged play: only the current structure's vessel is active
       this._labelVessel(v);
       this.l0.add(v.group);
       return v;
@@ -204,6 +210,10 @@ export class Game {
       sheetB: mk('FYTVIWTYV', 14),
       coil: mk('GPSNGDPGS', 15),
     };
+    // the ribbons use the colours of the rest of the game (helix cyan, strand pink), still translucent (Chain fades the opacity in as it folds)
+    const tint = (c, color) => { c.ribbon.material = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.22, roughness: 0.4, side: THREE.DoubleSide, transparent: true, opacity: 0.62, depthWrite: false }); };
+    tint(this.demos.helix, KINDS.helix.color);
+    tint(this.demos.sheetA, KINDS.strand.color); tint(this.demos.sheetB, KINDS.strand.color);
     this.demoCenter = new THREE.Vector3(0, 1.35, -1.15);
     this.demoScale = 1.45;
     for (const c of Object.values(this.demos)) c.group.scale.setScalar(this.demoScale);
@@ -224,6 +234,23 @@ export class Game {
     this.panels = [this.coachPanel, this.sidePanel];
     this.panels.forEach((p) => this.world.add(p.mesh));
     this.redrawAll();
+  }
+
+  /**
+   * The tutorial has a single molecule in the middle, so the boards come in close (no need to turn the head and lose the
+   * animation); with the vessels and trays they stay out wide. They glide between the two layouts.
+   */
+  _placePanels(dt) {
+    const near = this.level === 0 && this.phase !== 'lab' && this.phase !== 'done' && (!this.group.active || this.group.inRound);   // (the finale spreads the three vessels out: boards go wide again)
+    const rack = this.phase === 'play';   // the sequences wait on a rack in front: keep the boards just beyond its ends
+    const L = !near ? { p: [-2.1, 1.45, -1.6], r: 0.85 } : rack ? { p: [-1.3, 1.52, -1.3], r: 0.55 } : { p: [-1.0, 1.42, -1.25], r: 0.5 };
+    const R = !near ? { p: [2.1, 1.45, -1.6], r: -0.85 } : rack ? { p: [1.5, 1.52, -1.3], r: -0.55 } : { p: [1.15, 1.42, -1.25], r: -0.5 };
+    const k = this._panelsPlaced ? 1 - Math.exp(-dt * 5) : 1;   // the first call snaps
+    this._panelsPlaced = true;
+    for (const [panel, tg] of [[this.sidePanel, L], [this.coachPanel, R]]) {
+      panel.mesh.position.lerp(_tmp.set(...tg.p), k);
+      panel.mesh.rotation.y += (tg.r - panel.mesh.rotation.y) * k;
+    }
   }
 
   redrawAll() {
@@ -258,7 +285,7 @@ export class Game {
       for (const c of [D.sheetA, D.sheetB]) { reset(c); c.kind = 'strand'; c.group.visible = true; }
       D.sheetB.flip = true;
     }
-    if (key === 'coil') { reset(D.coil); D.coil.kind = 'coil'; D.coil.group.visible = true; D.coil.group.position.copy(this.demoCenter); }
+    if (key === 'coil') { reset(D.coil); D.coil.kind = 'coil'; D.coil.group.visible = true; D.coil.group.position.copy(this.demoCenter); this._coilTrace(D.coil, 0); }
   }
 
   updateDemo(dt) {
@@ -271,7 +298,7 @@ export class Game {
     const f = ease((run.t - 0.9) / 2.8);
     const sc = this.demoScale;
     if (key === 'helix') { D.helix.f = f; D.helix.refresh(); D.helix.group.quaternion.copy(this.demoRot); }
-    if (key === 'coil') { D.coil.f = f; D.coil.refresh(); D.coil.group.quaternion.copy(this.demoRot); }
+    if (key === 'coil') { D.coil.f = f; D.coil.refresh(); D.coil.group.quaternion.copy(this.demoRot); this._coilTrace(D.coil, f); }
     if (key === 'sheet') {
       const dA = this.sheet.d * K * sc, sA = this.sheet.s * K * sc;
       // tilt the sheet towards the viewer so the ladder of H-bonds between strands is visible
@@ -288,22 +315,86 @@ export class Game {
     if (run.t > 0.9 && !run.sfx && key !== 'primary') { run.sfx = true; sfx.fold(); }
   }
 
+  /**
+   * Tutorial coil: a thin translucent round trace along the backbone, like the helix and sheet ribbons but without
+   * the flat ribbon (a ribbon would suggest a regular structure). It fades in as the chain forms its loop.
+   */
+  _coilTrace(chain, f) {
+    if (!this._trace) {
+      this._trace = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({
+        color: KINDS.coil.color, emissive: 0x5a3f00, emissiveIntensity: 1, roughness: 0.4, transparent: true, opacity: 0, depthWrite: false,
+      }));
+      this._trace.frustumCulled = false;
+      chain.group.add(this._trace);
+    }
+    const op = 0.62 * THREE.MathUtils.smoothstep(f, 0.05, 0.6);
+    this._trace.visible = op > 0.01;
+    this._trace.material.opacity = op;
+    if (!this._trace.visible) return;
+    const pts = chain.res.map((r) => r.CA.clone().multiplyScalar(K));
+    this._trace.geometry.dispose();
+    this._trace.geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false, 'centripetal'), pts.length * 8, 0.016, 8, false);
+  }
+
   startPlay() {
     this.phase = 'play';
     this.mistakes = 0; this.hintCount = 0; this.showHint = false;
     Object.values(this.demos).forEach((c) => (c.group.visible = false));
     this.demoRun = { key: null, t: 0 };
-    this.coach = { title: t('play.title'), body: t('play.body', { input: this.inputHint() }), tone: 'info' };
+    this.staged = true; this.stage = 0; this.stageDoneT = -1;   // solo and group play: one structure at a time
+    this.coach = this.staged ? this._stageCoach() : { title: t('play.title'), body: t('play.body', { input: this.inputHint() }), tone: 'info' };
     this.resetPieces();
+    this._applyStage(true);
     this.redrawAll();
     sfx.good();
+  }
+
+  // ------------------------------------------------------------------ staged Level 0 (solo): helix -> sheet -> coil
+  /** only the vessel of the current stage is active (the others fade out); classic play / the finale show all three */
+  _applyStage(snap = false) {
+    const kind = STAGE_KINDS[Math.min(this.stage, STAGE_KINDS.length - 1)];
+    for (const v of this.vessels) {
+      v.activeTarget = !this.staged || v.kind === kind;
+      if (snap && this.staged && v.activeTarget) v.show = 0;      // the new vessel grows in
+    }
+  }
+
+  _stageCoach() {
+    const kind = STAGE_KINDS[Math.min(this.stage, STAGE_KINDS.length - 1)];
+    return { title: t('stage.title', { n: this.stage + 1, kind: kname(kind) }), body: t('stage.body', { rule: t(`kind.${kind}.rule`), input: this.inputHint() }), tone: 'info' };
+  }
+
+  updateStage(dt) {
+    if (!this.staged || this.phase !== 'play' || this.stageDoneT < 0) return;
+    this.stageDoneT += dt;
+    if (this.stageDoneT > 5) this.nextStage();
+  }
+
+  nextStage() {
+    if (!this.staged || this.stageDoneT < 0) return;
+    const done = STAGE_KINDS[this.stage];
+    for (const c of this.chains) {                                   // the sequences just placed go back to the rack: they stay among the choices
+      const u = c.userData;
+      if (u.state === 'locked' && u.cls === done) {
+        u.stageDone = true;
+        u.vessel.slots.forEach((s) => { if (s.chain === c) s.chain = null; });
+        c.setLabels(true); c.seqLabel.visible = true;
+        this.sendHome(c);
+      }
+    }
+    this.stage = Math.min(STAGE_KINDS.length - 1, this.stage + 1);
+    this.stageDoneT = -1;
+    this._applyStage(true);
+    this.coach = this._stageCoach();
+    sfx.click();
+    this.redrawAll();
   }
 
   resetPieces() {
     for (const v of this.vessels) { v.slots.forEach((s) => (s.chain = null)); v.state = 'idle'; }
     for (const c of this.chains) {
       const u = c.userData;
-      u.state = 'tray'; u.attempts = 0; u.holder = null;
+      u.state = 'tray'; u.attempts = 0; u.holder = null; u.stageDone = false;
       c.f = 0; c.kind = 'coil'; c.flip = false; c.weights.fill(1); c.stress.fill(0);
       c.group.position.copy(u.home); c.group.quaternion.identity();
       c.setBubble(true); c.setLabels(true); c.seqLabel.visible = true; c.refresh();
@@ -317,6 +408,7 @@ export class Game {
     if (this.phase === 'lab') return this.lab.takeOut();
     if (this.level >= 1) return this.l1.reset();
     this.phase = 'intro'; this.step = 0; this.reveal = 0; this.showHint = false;
+    this.staged = false; this.stageDoneT = -1; this._applyStage(false);
     this.resetPieces();
     this.setStep(0);
   }
@@ -374,7 +466,7 @@ export class Game {
 
   say(title, body, tone = 'info') { this.coach = { title, body, tone }; this.showHint = false; this.coachPanel.redraw(); }
 
-  get placedCount() { return this.chains.filter((c) => c.userData.state === 'locked' || c.userData.state === 'folding').length; }
+  get placedCount() { return this.chains.filter((c) => c.userData.state === 'locked' || c.userData.state === 'folding' || c.userData.stageDone).length; }
 
   // ------------------------------------------------------------------ panels
   _drawCoach(p) {
@@ -394,6 +486,7 @@ export class Game {
       const solved = this.phase === 'done';
       p.text(solved ? this.group.solvedLine() : this.group.statusLine(this.puzzle), 56, r1 - 58, { size: 30, weight: 700, color: solved ? THEME.good : THEME.text, maxW: w - 112 });
       if (!solved) p.button(t('hint'), 56, r1, 190, bh, () => this.hint());
+      if (!solved && this.staged && this.stageDoneT >= 0) p.button(t('stage.continue'), 266, r1, 300, bh, () => this.nextStage(), { primary: true, size: 30 });
       options();
       return;
     }
@@ -407,7 +500,8 @@ export class Game {
     } else if (this.phase === 'play') {
       p.text(t('l0.status', { a: this.placedCount, b: this.chains.length, m: this.mistakes }), 56, r1 - 58, { size: 34, color: THEME.text, weight: 700 });
       p.button(t('hint'), 56, r1, 190, bh, () => this.hint());
-      p.button(t('restart'), 266, r1, 240, bh, () => { this.phase = 'play'; this.mistakes = 0; this.resetPieces(); this.coach = { title: t('play.fresh'), body: this.inputHint(), tone: 'info' }; this.showHint = false; this.redrawAll(); });
+      p.button(t('restart'), 266, r1, 240, bh, () => this.startPlay());
+      if (this.staged && this.stageDoneT >= 0) p.button(t('stage.continue'), 526, r1, w - 56 - 526, bh, () => this.nextStage(), { primary: true, size: 30 });
       options();
     } else {
       p.button(t('play.again'), 56, r1, 300, bh, () => { this.phase = 'play'; this.startPlay(); }, { primary: true });
@@ -455,9 +549,13 @@ export class Game {
       for (const k of ['hydrophobic', 'polar', 'positive', 'negative', 'glycine', 'proline']) {
         const grp = RGROUP[k];
         g.fillStyle = '#' + grp.color.toString(16).padStart(6, '0'); g.beginPath(); g.arc(70, y + 20, 15, 0, 7); g.fill();
-        p.text(`${t('rg.' + k)}  (${grp.set.split('').join(' ')})`, 105, y + 3, { size: 29 }); y += 48;
+        p.text(t('rg.' + k), 105, y + 1, { size: 29 });
+        p.text(grp.set.split('').map((aa) => RESIDUE_NAMES[aa]).join(' · '), 105, y + 33, { size: 22, color: THEME.dim, maxW: w - 150 });   // three-letter codes (Ala, Val...): not everybody knows the one-letter ones
+        y += 68;
       }
-      p.text(t('legend.hb'), 50, y + 14, { size: 30, color: '#fff27a', weight: 700 });
+      p.text(t('legend.hb'), 50, y + 10, { size: 30, color: '#fff27a', weight: 700 });
+    } else if (this.staged && this.phase === 'play') {
+      this._drawStageGuide(p);
     } else {
       p.text(t('field'), 50, 34, { size: 46, weight: 800, color: THEME.border });
       let y = 112;
@@ -471,6 +569,26 @@ export class Game {
         y += 320;
       }
     }
+  }
+
+  /** Field guide of the staged Level 0: progress, and one big card for the structure being worked on */
+  _drawStageGuide(p) {
+    const { w } = p, g = p.g;
+    p.text(t('field'), 50, 34, { size: 46, weight: 800, color: THEME.border });
+    const cw = (w - 100 - 24) / 3;
+    STAGE_KINDS.forEach((k, i) => {
+      const done = i < this.stage || (i === this.stage && this.stageDoneT >= 0), cur = i === this.stage, x = 50 + i * (cw + 12);
+      g.fillStyle = cur ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.04)'; g.fillRect(x, 108, cw, 64);
+      g.strokeStyle = cur ? KINDS[k].color : 'rgba(255,255,255,0.15)'; g.lineWidth = cur ? 4 : 2; g.strokeRect(x, 108, cw, 64);
+      p.text(`${done ? '✓ ' : ''}${kname(k)}`, x + cw / 2, 124, { size: 26, weight: 700, align: 'center', color: done ? THEME.good : cur ? KINDS[k].color : THEME.dim, maxW: cw - 16 });
+    });
+    const k = STAGE_KINDS[Math.min(this.stage, STAGE_KINDS.length - 1)], y0 = 200;
+    g.fillStyle = 'rgba(255,255,255,0.05)'; g.fillRect(36, y0, w - 72, 700);
+    g.fillStyle = KINDS[k].color; g.fillRect(36, y0, 8, 700);
+    p.text(kname(k), 62, y0 + 22, { size: 54, weight: 800, color: KINDS[k].color, maxW: w - 120 });
+    let y = p.text(t(`kind.${k}.card`), 62, y0 + 100, { size: 32, maxW: w - 120, lh: 1.3 }) + 26;
+    y = p.text(t(`kind.${k}.rule`), 62, y, { size: 28, color: THEME.dim, maxW: w - 120, lh: 1.3 }) + 34;
+    this._likes(p, 62, y, k, w - 120, 34);
   }
 
   /** "Likes:" line where each amino acid is written Name (X) in its own R-group colour. */
@@ -630,6 +748,7 @@ export class Game {
   aimedVessel(o, d) {
     let best = null;
     for (const v of this.vessels) {
+      if (!v.activeTarget || v.show < 0.5) continue;
       const c = v.group.position;
       const t = _tmp.subVectors(c, o).dot(d);
       if (t < 0.3) continue;
@@ -643,6 +762,7 @@ export class Game {
   nearestVessel(pos) {
     let best = null, bd = 1e9;
     for (const v of this.vessels) {
+      if (!v.activeTarget || v.show < 0.5) continue;
       const d = pos.distanceTo(v.group.position);
       if (d < v.radius + 0.1 && d < bd) { best = v; bd = d; }
     }
@@ -718,6 +838,7 @@ export class Game {
   update(dt, t, pointers, raycaster) {
     this.time = t;
     dt = Math.min(dt, 0.05);
+    this._placePanels(dt);
     this.group.tick(dt);
     if (this.level >= 1) {
       this.l1.update(dt, t, pointers, raycaster);
@@ -731,7 +852,16 @@ export class Game {
     const target = this.phase === 'intro' ? 0 : 1;
     this.reveal += (target - this.reveal) * Math.min(1, dt * 4);
     const rv = ease(this.reveal);
-    this.vessels.forEach((v) => { v.group.scale.setScalar(Math.max(0.001, rv)); v.group.visible = rv > 0.01; v.group.updateMatrix(); });
+    this.updateStage(dt);
+    const kv = 1 - Math.exp(-dt * 4);
+    this.vessels.forEach((v) => {
+      v.show += ((v.activeTarget ? 1 : 0) - v.show) * Math.min(1, dt * 5);
+      const tp = this.staged ? STAGE_CENTER : v.homePos, ty = this.staged ? 0 : v.homeYaw;
+      if (v.show < 0.05) { v.group.position.copy(tp); v.group.rotation.y = ty; }            // hidden: jump; visible: glide
+      else { v.group.position.lerp(tp, kv); v.group.rotation.y += (ty - v.group.rotation.y) * kv; }
+      const s = rv * ease(v.show);
+      v.group.scale.setScalar(Math.max(0.001, s)); v.group.visible = s > 0.01; v.group.updateMatrix();
+    });
     this.shelf.visible = rv > 0.01; this.shelf.scale.setScalar(Math.max(0.001, rv));
     this.pads.forEach((p) => (p.visible = rv > 0.05 && this.phase !== 'lab'));
 
@@ -797,11 +927,20 @@ export class Game {
         c.group.quaternion.slerp(new THREE.Quaternion(), Math.min(1, dt * 5));
         c.group.scale.setScalar(u.homeScale);
         if (c.f > 0 || c.stress.some((s) => s > 0)) { c.f = Math.max(0, c.f - dt * 2); c.stress = c.stress.map((s) => Math.max(0, s - dt * 2)); c.refresh(); }
-        if (u.t >= 0.9) { u.state = 'tray'; c.group.position.copy(u.home); }
+        if (u.t >= 0.9) {
+          u.state = 'tray'; c.group.position.copy(u.home);
+          if (u.stageDone) { c.kind = 'coil'; c.flip = false; c.f = 0; c.weights.fill(1); c.stress.fill(0); c.setBubble(true); c.refresh(); }   // back on the rack, unfolded again
+        }
       } else if (u.state === 'held') {
         c.group.scale.setScalar(u.homeScale);
       }
-      if (u.state === 'locked') c.group.position.copy(u.vessel.worldSlotPos(u.slot));
+      if (u.state === 'locked') {
+        c.group.position.copy(u.vessel.worldSlotPos(u.slot));
+        c.group.quaternion.copy(u.vessel.worldQuat);                      // (the vessel may glide to another place)
+        const sh = u.vessel.show;
+        c.group.scale.setScalar(Math.max(0.001, sh));                     // fades with its vessel
+        if (sh < 0.02) c.group.visible = false;
+      }
     }
   }
 
@@ -815,6 +954,7 @@ export class Game {
     const wp = c.group.position;
     this.bursts.spawn(wp, hexNum(KINDS[v.kind].color), 70, 1.3);
     sfx.good();
+    if (this.phase === 'done') return;                                  // finale: an earlier chain settling into its vessel
     // count H-bonds for the explanation
     const lst = v.slots.filter((s) => s.chain).map((s) => s.chain);
     const bonds = findHBonds(lst.map((x) => x.worldRes()), 2.6, 125);
@@ -828,11 +968,34 @@ export class Game {
       body = t(both ? 'ok.sheet' : 'ok.strand', { seq: c.seq, top, n });
     } else { key = 'coil'; body = t('ok.coil', { seq: c.seq, top, n }); }
     this.say(t(`ok.${key}.title`), body, 'good');
-    if (this.phase !== 'lab' && this.chains.every((x) => x.userData.state === 'locked')) this.win();
+    if (this.staged && this.phase === 'play') {                          // both sequences of this structure are in: on to the next one
+      const kind = STAGE_KINDS[this.stage];
+      if (this.stage < STAGE_KINDS.length - 1 && this.chains.filter((x) => x.userData.cls === kind).every((x) => x.userData.state === 'locked')) {
+        this.stageDoneT = 0;
+        this.coach.body += `\n\n${t('stage.done', { kind: t(`kind.${kind}.lower`), next: t(`kind.${STAGE_KINDS[this.stage + 1]}.lower`) })}`;
+        this.coachPanel.redraw();
+      }
+    }
+    if (this.phase === 'lab') return;
+    const finished = this.staged ? this.stage === STAGE_KINDS.length - 1 && this.chains.filter((x) => x.userData.cls === 'coil').every((x) => x.userData.state === 'locked')
+      : this.chains.every((x) => x.userData.state === 'locked');
+    if (finished) this.win();
   }
 
   win() {
     this.phase = 'done';
+    this.staged = false; this.stageDoneT = -1; this._applyStage(false);   // finale: all three vessels, each with its two folded chains
+    for (const c of this.chains) {                                       // the helix and sheet sequences fold into their vessels again
+      const u = c.userData;
+      if (!u.stageDone) continue;
+      const v = this.vessels.find((x) => x.kind === u.cls), slot = v.free;
+      if (!slot) continue;
+      if (u.holder) { u.holder.holding = null; u.holder = null; }
+      u.stageDone = false; slot.chain = c; u.vessel = v; u.slot = slot; u.t = 0;
+      u.from.copy(c.group.position); u.fromQuat = c.group.quaternion.clone();
+      c.kind = v.kind; c.flip = slot.flip; c.weights.fill(1); c.stress.fill(0); c.setBubble(false);
+      u.state = 'folding';
+    }
     const stars = this.mistakes <= 1 ? 3 : this.mistakes <= 3 ? 2 : 1;
     setTimeout(() => {
       sfx.win();
@@ -882,7 +1045,7 @@ export class Game {
 
   updatePanelsLive() {
     // keep the HUD counters fresh without redrawing every frame
-    const sig = this.level >= 1 ? 'L' + this.level + '|' + this.l1.sig() : `${this.placedCount}|${this.mistakes}|${this.phase}|${this.lab.seq}|${this.chains[0]?.userData.state}`;
+    const sig = this.level >= 1 ? 'L' + this.level + '|' + this.l1.sig() : `${this.placedCount}|${this.mistakes}|${this.phase}|${this.lab.seq}|${this.chains[0]?.userData.state}|${this.stage}|${this.stageDoneT >= 0}`;
     if (sig !== this._sig) { this._sig = sig; this.coachPanel.redraw(); this.sidePanel.redraw(); }
   }
 }

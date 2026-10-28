@@ -115,6 +115,7 @@ export class Group {
     if (L.groupKind === 'l0') {          // Level 0: state letter (tray, held, folding, locked, rejecting, returning) + kind + fold 0-9 + flip
       const code = { tray: 't', held: 'h', folding: 'f', locked: 'k', rejecting: 'r', returning: 'x' };
       mols = this.game.chains.map((c, i) => pose(`c${i}`, c.group, `${code[c.userData.state] ?? 't'}${c.kind[0]}${Math.round(c.f * 9)}${c.flip ? 1 : 0}`));
+      mols.push({ id: 'stage', p: [this.game.stage, this.game.staged ? 1 : 0, 0], q: [0, 0, 0, 1], s: '' });   // which vessel is on stage (the teacher's view follows it)
       const h = this.game.chains.findIndex((c) => c.userData.state === 'held');
       held = h >= 0 ? `c${h}` : null;
     } else if (L.cards) {                // Level 3
@@ -153,8 +154,9 @@ export class Group {
     const room = this.room, s = this.state;
     p.text(t('group.title'), 56, 34, { size: 46, weight: 800, color: THEME.border, shadow: THEME.border, maxW: w - 112 });
     if (room) p.text(t('group.room', { code: room.room }), 56, 100, { size: 34, weight: 700, color: THEME.good });
-    const options = () => p.button(this.game.menuOpen ? t('options.close') : t('options'), w - 56 - 290, h - 100, 290, 78, () => this.game.toggleMenu(), { active: this.game.menuOpen, size: 32 });
-    const leave = () => p.button(t('group.leave'), 56, h - 100, 400, 78, () => this.leave(), { size: 30 });
+    // bottom row: Leave | Change colour (lobby only) | Options - three buttons that must not overlap (990 px wide board)
+    const options = () => p.button(this.game.menuOpen ? t('options.close') : t('options'), w - 56 - 250, h - 100, 250, 78, () => this.game.toggleMenu(), { active: this.game.menuOpen, size: 28 });
+    const leave = () => p.button(t('group.leave'), 56, h - 100, 330, 78, () => this.leave(), { size: 28 });
     const center = (text, y, size, color = THEME.text, weight = 700) => p.text(text, w / 2, y, { size, weight, color, align: 'center', maxW: w - 112 });
 
     if (this.view === 'join' || !room) { this.drawKeypad(p, options); return; }
@@ -187,7 +189,7 @@ export class Group {
       center(t('group.waiting'), 290, 40, THEME.warn);
       center(t('group.plan', { n: s.totalRounds }), 350, 32, THEME.dim, 500);
       this.drawRows(p, s, 420, false);
-      p.button(t('group.swap'), 56 + 420, h - 100, 280, 78, () => { room.team = -1; this.game.redrawAll(); }, { size: 28 });
+      p.button(t('group.swap'), 56 + 330 + 12, h - 100, 250, 78, () => { room.team = -1; this.game.redrawAll(); }, { size: 26 });
     } else if (s.phase === 'countdown') {
       center(t('group.round', { n: s.round + 1, total: s.totalRounds }), 190, 40, THEME.dim);
       center(challengeTitle(s.challenge), 250, 52, THEME.good, 800);

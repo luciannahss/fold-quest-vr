@@ -14,6 +14,7 @@ import { SEQUENCES } from './sequences.js';
 import { t } from './i18n.js';
 
 const v3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
+const STAGE_CENTER = new THREE.Vector3(0, 1.5, -1.45);   // where the vessel of the current Level 0 stage stands (as in the game)
 const EYE = new THREE.Vector3(0, 1.6, 0.55), AIM = new THREE.Vector3(0, 1.22, -1.2);
 
 /** cartoon of one piece (a residue range of a protein), centred like Chain does, ready to be placed by a pose */
@@ -72,6 +73,7 @@ export class LiveView {
         S.vessels = [['helix', -1.0, 0.38], ['strand', 0, 0], ['coil', 1.0, -0.38]].map(([kind, x, yaw]) => {
           const v = new Vessel(kind, sheet);
           v.group.position.set(x, 1.5, -1.45 + Math.abs(x) * 0.2); v.group.rotation.y = yaw;
+          v.homePos = v.group.position.clone(); v.homeYaw = yaw; v.show = 1;
           const label = makeLabel(t(`vessel.${kind}.title`), t(`vessel.${kind}.sub`), COLORS[kind]); label.position.set(0, 0.5, 0); v.group.add(label);
           S.table.add(v.group);
           return v;
@@ -117,6 +119,7 @@ export class LiveView {
     if (!S || !this.challenge) return;
     this.lastPose[m.team] = performance.now();
     for (const mol of m.mols) {
+      if (mol.id === 'stage') { S.stageInfo = { stage: mol.p[0], staged: mol.p[1] === 1 }; continue; }   // Level 0: which vessel is on stage
       let it = S.items.get(mol.id);
       if (!it && this.challenge.level === 3 && POOL[mol.id]) {
         // Level 3 cards appear when their first pose arrives (their surface is loaded on demand)
@@ -134,7 +137,7 @@ export class LiveView {
       if (it.chain && mol.s !== it.sig) {                 // Level 0 chain: state letter + kind + fold 0-9 + flip
         it.sig = mol.s;
         const kind = { h: 'helix', s: 'strand', c: 'coil' }[mol.s[1]] ?? 'coil';
-        it.chain.kind = kind; it.chain.f = Number(mol.s[2]) / 9; it.chain.flip = mol.s[3] === '1';
+        it.chain.kind = kind; it.chain.f = Math.min(1, Math.max(0, Number(mol.s[2]) / 9 || 0)); it.chain.flip = mol.s[3] === '1';   // (a malformed message must not break the screen)
         it.chain.refresh();
         it.node.scale.setScalar('th'.includes(mol.s[0]) ? 1.3 : 1);
       }
@@ -168,7 +171,16 @@ export class LiveView {
       const r = el.getBoundingClientRect();
       if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > H) return;
       const S = this.scenes[i];
-      S.vessels?.forEach((v) => v.update(performance.now() / 1000, dt));
+      // Level 0 is played one structure at a time: only the current vessel stands (in the centre); at the end all three are back
+      const st = S.stageInfo, staged = !!st?.staged, stageKind = ['helix', 'strand', 'coil'][Math.min(2, st?.stage ?? 0)];
+      S.vessels?.forEach((v) => {
+        v.update(performance.now() / 1000, dt);
+        const active = !staged || v.kind === stageKind;
+        v.show += ((active ? 1 : 0) - v.show) * Math.min(1, dt * 5);
+        const tp = staged ? STAGE_CENTER : v.homePos, ty = staged ? 0 : v.homeYaw;
+        if (v.show < 0.05) { v.group.position.copy(tp); v.group.rotation.y = ty; } else { v.group.position.lerp(tp, k); v.group.rotation.y += (ty - v.group.rotation.y) * k; }
+        const sc = Math.max(0.001, v.show); v.group.scale.setScalar(sc); v.group.visible = sc > 0.02;
+      });
       for (const it of S.items.values()) {
         if (!it.target) continue;
         it.node.position.lerp(it.target.p, k); it.node.quaternion.slerp(it.target.q, k);

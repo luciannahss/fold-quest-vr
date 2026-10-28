@@ -31,6 +31,7 @@ export class Lab {
   enter() {
     const g = this.game;
     g.level = 0; g.phase = 'lab'; g.menuOpen = false; g.showHint = false;
+    g.staged = false; g.stageDoneT = -1; g._applyStage(false);   // the lab shows the three vessels
     [...g.l1s, ...g.l2s, ...g.l3s].forEach((l) => (l.group.visible = false));
     g.l0.visible = true;
     Object.values(g.demos).forEach((c) => (c.group.visible = false));

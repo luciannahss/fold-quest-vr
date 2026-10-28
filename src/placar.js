@@ -326,7 +326,7 @@ try {
   const frame = () => { const n = performance.now(); try { view?.render(Math.min(0.1, (n - last) / 1000)); } catch (err) { console.warn('live view', err); view = null; } last = n; if (view) requestAnimationFrame(frame); };
   requestAnimationFrame(frame);
 } catch (err) { console.warn('live view unavailable', err); view = null; }
-window.__placar = { client: () => client };
+window.__placar = { client: () => client, view: () => view };
 // keeps a free-tier server awake while this screen is open
 setInterval(() => { if (server) void pingServer(server, 20_000); }, 4 * 60_000);
 void wake().then(() => {

@@ -9,6 +9,9 @@ import hemoglobin from './hemoglobin.js';
 import antibody from './antibody.js';
 import { t } from '../i18n.js';
 
+// the hemes (myoglobin, hemoglobin) are green to stand out in the finished protein; the iron stays orange
+const HEME_GREEN = { C: 0x2fe36e, N: 0x16b59a, bond: 0xb6f5cb, emissive: 0x04330f };
+
 export const PROTEINS = [
   {
     id: '1CRN',
@@ -48,6 +51,7 @@ export const PROTEINS = [
     id: '1MBN',
     data: myoglobin,
     scale: 0.6,
+    ligandStyle: HEME_GREEN,
     pieces: [
       { id: 'hA', type: 'helix', from: 1, to: 19, ribbon: [3, 18] },
       { id: 'hB', type: 'helix', from: 20, to: 35, ribbon: [20, 35] },
@@ -82,6 +86,7 @@ export const COMPLEXES = [
     id: '4HHB',
     data: hemoglobin,
     scale: 0.55,
+    ligandStyle: HEME_GREEN,
     pieces: [
       { id: 'a1', short: 'α1', type: 'helix', color: '#3f7bff', from: 1, to: 141 },
       { id: 'b1', short: 'β1', type: 'strand', color: '#ff7a2d', from: 1001, to: 1146 },
