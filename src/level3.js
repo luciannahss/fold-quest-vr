@@ -244,7 +244,7 @@ export class Level3 {
   /** glassT 0..1: the opaque surface becomes see-through (and loses most of its outline) while the cartoon fades in */
   _applyGlass() {
     const a = ease(this.glassT);
-    if (this.revealT >= 1) {
+    if (this.revealT >= 1 && (this.phase === 'revealed' || this.phase === 'done')) {   // only once the shadow has been solved
       this.revealMat.opacity = 1 - 0.78 * a; this.revealMat.depthWrite = a === 0;
       this.revealOutline.material.uniforms.uOpacity.value = 1 - 0.85 * a;
     }
