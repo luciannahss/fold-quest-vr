@@ -7,6 +7,7 @@ import myoglobin from './myoglobin.js';
 import insulin from './insulin.js';
 import hemoglobin from './hemoglobin.js';
 import antibody from './antibody.js';
+import gfp from './gfp.js';
 import { t } from '../i18n.js';
 
 // the hemes (myoglobin, hemoglobin) are green to stand out in the finished protein; the iron stays orange
@@ -65,6 +66,29 @@ export const PROTEINS = [
     insights: [
       { pieces: [0, 6, 7] },
       { pieces: [4, 5] },
+    ],
+  },
+  {
+    // Green fluorescent protein: 11 beta-strands in a barrel around a helix that carries the chromophore. Pieces are groups
+    // of strands (hairpins), so each piece holds several elements: it is drawn with the multi-element cartoon.
+    id: '1EMA',
+    short: 'GFP',
+    data: gfp,
+    scale: 0.55,
+    multiElement: true,
+    ligandStyle: { C: 0x6dff4d, N: 0x2fe0a8, bond: 0xc8ffb0, emissive: 0x0a4a06 },   // the chromophore: bright green (the iron-free "glowing part")
+    pieces: [
+      { id: 'p1', type: 'strand', from: 2, to: 40 },
+      { id: 'p2', type: 'helix', from: 41, to: 91 },
+      { id: 'p3', type: 'strand', from: 92, to: 128 },
+      { id: 'p4', type: 'strand', from: 129, to: 159 },
+      { id: 'p5', type: 'strand', from: 160, to: 198 },
+      { id: 'p6', type: 'strand', from: 199, to: 229 },
+    ],
+    insights: [
+      { pieces: [0, 1] },
+      { pieces: [0, 5] },
+      { pieces: [2, 4] },
     ],
   },
 ];

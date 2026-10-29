@@ -418,4 +418,26 @@ export default {
   'stage.done': '✓ Etapa de {kind} concluída! Próxima: {next}. As sequências que você colocou voltam para a prateleira: atenção.',
   'stage.continue': 'Continuar  ▶',
   'menu.center': 'Centralizar',
+  'exit.home': 'Início',
+
+  // ---- Level 1: green fluorescent protein (1EMA)
+  'p.1EMA.name': 'Proteína fluorescente verde',
+  'p.1EMA.subtitle': 'Proteína luminosa da água-viva Aequorea victoria, 225 resíduos, 1,9 Å',
+  'p.1EMA.piece.p1': 'FITAS 1–2', 'p.1EMA.piece.p2': 'HÉLICE CENTRAL', 'p.1EMA.piece.p3': 'FITAS 4–6', 'p.1EMA.piece.p4': 'FITA 7', 'p.1EMA.piece.p5': 'FITAS 8–9', 'p.1EMA.piece.p6': 'FITAS 10–11',
+  'p.1EMA.intro': 'A GFP vem de uma água-viva e brilha em verde. Suas 11 fitas β se enrolam formando um barril, com uma hélice curta atravessando o centro. Ela foi cortada em 6 peças, quase todas grampos de duas ou três fitas. Quando a proteína estiver completa, você verá o cromóforo: a parte que brilha.',
+  'p.1EMA.links': [
+    'Ligação 40 → 41. Depois das fitas 1 e 2 (um grampo β) a cadeia forma a fita 3 e depois mergulha no barril como hélice central.',
+    'Ligação 91 → 92. A hélice central termina e a cadeia volta à parede do barril com a fita 4.',
+    'Ligação 128 → 129. Depois da fita 6, uma alça longa corre por fora do barril até a fita 7.',
+    'Ligação 159 → 160. A fita 7 leva às fitas 8 e 9, outro grampo β.',
+    'Ligação 198 → 199. As fitas 10 e 11 terminam a cadeia e fecham o barril.',
+  ],
+  'p.1EMA.ins0': ' A hélice atravessa o barril pelo meio: o cromóforo fica nela, protegido da água.',
+  'p.1EMA.ins1': ' A fita 1 (o começo da cadeia) e a fita 11 (o seu fim) são vizinhas: é assim que o barril se fecha.',
+  'p.1EMA.ins2': ' As fitas 4–6 e 8–9 estão bem distantes na sequência, mas ficam lado a lado na parede do barril.',
+  'p.1EMA.finish': (c) => `Você reconstruiu a GFP (1EMA): onze fitas β se enrolam num barril (${c.total} ligações H da cadeia principal) em volta de uma hélice curta. O cromóforo (formado por três aminoácidos da própria proteína: Ser65, Tyr66 e Gly67) fica no meio dessa hélice, protegido dentro do barril, e é isso que faz a GFP brilhar.`,
+  'p.1EMA.watch': ' Veja o cromóforo aparecer…',
+  'group.tutorial': 'Aprenda a se mover (tutorial)',
+  'group.tutorial.done': 'Voltar ao lobby',
+  'pm.practising': 'praticando com o tutorial…',
 };

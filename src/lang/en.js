@@ -420,4 +420,26 @@ export default {
   'stage.done': '✓ {kind} stage complete! Next: {next}. The sequences you placed go back to the rack, so stay alert.',
   'stage.continue': 'Continue  ▶',
   'menu.center': 'Center',
+  'exit.home': 'Home',
+
+  // ---- Level 1: green fluorescent protein (1EMA)
+  'p.1EMA.name': 'Green fluorescent protein',
+  'p.1EMA.subtitle': 'Glowing protein of the jellyfish Aequorea victoria, 225 residues, 1.9 Å',
+  'p.1EMA.piece.p1': 'STRANDS 1–2', 'p.1EMA.piece.p2': 'CENTRAL HELIX', 'p.1EMA.piece.p3': 'STRANDS 4–6', 'p.1EMA.piece.p4': 'STRAND 7', 'p.1EMA.piece.p5': 'STRANDS 8–9', 'p.1EMA.piece.p6': 'STRANDS 10–11',
+  'p.1EMA.intro': 'GFP comes from a jellyfish and glows green. Its 11 β-strands curl into a barrel, with a short helix running through the middle. It has been cut into 6 pieces, most of them hairpins of two or three strands. When the protein is complete you will see the chromophore: the glowing part.',
+  'p.1EMA.links': [
+    'Link 40 → 41. After strands 1 and 2 (a β-hairpin) the chain makes strand 3 and then dives into the barrel as the central helix.',
+    'Link 91 → 92. The central helix ends, and the chain comes back to the barrel wall with strand 4.',
+    'Link 128 → 129. After strand 6 a long loop runs along the outside of the barrel to strand 7.',
+    'Link 159 → 160. Strand 7 leads into strands 8 and 9, another β-hairpin.',
+    'Link 198 → 199. Strands 10 and 11 finish the chain and close the barrel.',
+  ],
+  'p.1EMA.ins0': ' The helix runs straight through the middle of the barrel: the chromophore sits on it, shielded from water.',
+  'p.1EMA.ins1': ' Strand 1 (the start of the chain) and strand 11 (its end) are neighbours: this is how the barrel closes.',
+  'p.1EMA.ins2': ' Strands 4–6 and 8–9 come from far apart in the sequence, yet they sit side by side in the barrel wall.',
+  'p.1EMA.finish': (c) => `You rebuilt GFP (1EMA): eleven β-strands curl into a barrel (${c.total} backbone H-bonds) around a short helix. The chromophore (made from three of the protein’s own amino acids, Ser65, Tyr66 and Gly67) sits in the middle of that helix, protected inside the barrel, which is what makes GFP glow.`,
+  'p.1EMA.watch': ' Watch the chromophore appear…',
+  'group.tutorial': 'Learn how to move (tutorial)',
+  'group.tutorial.done': 'Back to the lobby',
+  'pm.practising': 'practising with the tutorial…',
 };

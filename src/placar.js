@@ -88,7 +88,7 @@ function statusPill() {
 
 const keyOf = (s) => (!client || !s
   ? `none|${serverOk}|${client?.status ?? ''}|${(client?.failures ?? 0) >= 3}`
-  : [s.phase, s.round, s.totalRounds, JSON.stringify(s.plan), s.scale, s.teams.map((x) => `${x.claimed ? 1 : 0}${x.online ? 1 : 0}`).join('')].join('|'));
+  : [s.phase, s.round, s.totalRounds, JSON.stringify(s.plan), s.scale, s.teams.map((x) => `${x.claimed ? 1 : 0}${x.online ? 1 : 0}${x.practising ? 1 : 0}`).join('')].join('|'));
 
 function render() {
   statusPill();
@@ -133,7 +133,7 @@ function connectHtml() {
 }
 
 function teamCard(tm) {
-  const state = !tm.claimed ? t('pm.free') : tm.online ? t('pm.s.ok') : t('pm.noconn');
+  const state = !tm.claimed ? t('pm.free') : tm.online ? (tm.practising ? t('pm.practising') : t('pm.s.ok')) : t('pm.noconn');
   return `<div class="team${tm.online ? ' online' : ''}" style="--c:${tm.color}">
     <span class="dot"></span>
     <input data-rename="${tm.index}" value="${esc(teamName(tm))}" maxlength="22" aria-label="${t('pm.teamname')}">

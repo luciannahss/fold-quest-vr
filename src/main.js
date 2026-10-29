@@ -117,6 +117,13 @@ async function switchMode(m) {
 game.hooks.switchMode = (m) => switchMode(m);
 game.hooks.setFloor = (f) => { env.setFloor(f); try { localStorage.setItem('floor', f); } catch { /* ignore */ } };
 game.hooks.setHeight = () => { /* applied per frame */ };
+game.hooks.exit = () => {                       // "Home" on the finish screens: end the VR session (if any) and show the start screen again
+  pendingMode = null;
+  const s = renderer.xr.getSession();
+  if (s) s.end();
+  $('overlay').classList.remove('hidden');
+  game.setLevel(0);
+};
 game.hooks.recenter = () => { if (renderer.xr.isPresenting) xrPlaceWorld(); };   // Options > Center: the scene moves to where you are and faces where you look
 try { const f = localStorage.getItem('floor'); if (f) { game.floor = f; env.setFloor(f); } } catch { /* ignore */ }
 

@@ -13,9 +13,11 @@ A browser-based WebXR game that teaches **how proteins fold, assemble and work**
    * wrong shape → it tries, residues that don't fit glow red, then it is pushed back out; the coach explains why
 3. Playing solo, the puzzle has **three stages, one structure at a time**: a single vessel (α-helix, then β-sheet, then coil) stands in the centre with the boards close by, and all six sequences are on the rack in every stage, so the ones for the other structures are distractors (dropping one in the wrong vessel counts as a mistake). Fill the vessel with its two sequences and press *Continue* (or wait a few seconds): the two sequences you placed go back to the rack, unfolded, and stay among the choices of the next stage. At the end the three vessels return side by side and every sequence folds into its own vessel. Stars depend on mistakes; **Hint** shows propensity bars. The group challenge's Level 0 puzzle uses the same stages (the teacher's live view follows the stage), with 240 s as the base time.
 
+Every level's finish screen has a **Home** button: in VR it ends the session and brings back the start screen (mode, language, group room); on a flat screen it shows the start screen again.
+
 **Sequence lab** (Level 0, free play; Options → *Lab*, or the *Sequence lab* button after finishing Level 0): build your own 9-residue sequence with the 20 amino-acid keys (coloured by chemistry), see the Chou–Fasman propensities for helix / sheet / coil and which shape each residue favours, then grab the chain and drop it into a vessel: it folds if the sequence prefers that shape, otherwise the game explains why not. *Example* and *Random* fill in a sequence; *Take it out* lets you try another vessel. Code: `src/lab.js`.
 
-**Level 1 — Build real proteins** (structures from the PDB): crambin (1CRN, 5 pieces), ubiquitin (1UBQ, 7 pieces), then myoglobin (1MBN, 8 helix pieces)
+**Level 1 — Build real proteins** (structures from the PDB): crambin (1CRN, 5 pieces), ubiquitin (1UBQ, 7 pieces), then myoglobin (1MBN, 8 helix pieces), then green fluorescent protein (1EMA, 6 pieces: groups of β-strands and the central helix; its chromophore appears at the end)
 
 The 46-residue crambin structure is cut at its secondary-structure boundaries into 5 pieces: β-strand 1 + loop (1–6),
 α-helix 1 + loop (7–22), α-helix 2 + loop (23–31), β-strand 2 (32–35) and the C-terminal tail (36–46).
@@ -70,6 +72,7 @@ A class plays **Levels 0-3 together**: up to 4 headsets (teams) get the same puz
 1. Start the room server: `npm run server` (port 8790; run `cd server && npm install` once). Serve the game as usual (`npm run serve`).
 2. On the computer open `http://localhost:8080/placar.html` (teacher screen) and click **Create room**: a 4-digit code appears. Choose how many puzzles of each level to play (Level 0: fold the six sequences in three stages, without the tutorial; Level 1: crambin, ubiquitin, myoglobin; Level 2: insulin, hemoglobin, antibody; Level 3: the shadows) and the time per puzzle.
 3. Each headset joins with the code: on the start screen before entering VR, in-game under **Options → Group challenge** (keypad), or with the link `?room=1234`. Each headset picks a team colour.
+   While waiting in the lobby, a headset can press **Learn how to move (tutorial)** to practise with the first five steps of the Level 0 tutorial (grab and turn a molecule, read the boards). The teacher screen shows "practising with the tutorial…" on that team, and the practice ends by itself when the challenge starts.
 4. Press **Start the challenge**. Everybody plays the same puzzle; the server runs the clock. Points: 100 for solving + up to 100 for speed + 50 for a clean run (no mistakes or hints) − 15 per mistake − 10 per hint (never below 50). Ties are broken by total time.
 
 Level 3 shows the teacher screen only "Shadow n" (never the protein name), so the class cannot see the answer. Headsets only report their progress and the moment they finish; the server measures the time and computes the points. It does not re-check the puzzle itself (a Level 1 puzzle is assembled locally), so it is meant for a classroom, not for a competition with prizes.

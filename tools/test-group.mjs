@@ -45,8 +45,11 @@ check(a.welcome.team === 0 && b.welcome.team === 1, 'two teams seated');
 const bad2 = client('player', '9999'); await sleep(300);
 check(bad2.errors.includes('no_room'), 'unknown room reported');
 
+a.send({ type: 'practice', on: true }); await until(() => host.state.teams[0].practising);
+check(host.state.teams[0].practising && !host.state.teams[1].practising, 'a headset practising with the tutorial shows on the teacher screen');
 host.send({ type: 'start' });
 await until(() => host.state.phase === 'countdown');
+check(!host.state.teams[0].practising, 'the practice flag clears when the challenge starts');
 check(host.state.phase === 'countdown' && host.state.round === 0, 'countdown starts');
 a.send({ type: 'solved', round: 0, mistakes: 0, hints: 0, total: 1 }); await sleep(80);
 check(!host.state.teams[0].solved, 'solve during countdown ignored');

@@ -20,6 +20,7 @@ export class Group {
     this.begun = -1;             // round whose puzzle is on screen
     this.sent = false;           // "solved" already reported for this round
     this.sig = ''; this.clock = ''; this.idle = false; this.myPoints = 0;
+    this.tutorial = false;       // practising in the lobby (the Level 0 tutorial); ends by itself when the challenge starts
   }
 
   get active() { return !!this.room; }
@@ -28,7 +29,7 @@ export class Group {
   /** a puzzle is being played right now */
   get inRound() { const s = this.state; return !!s && s.phase === 'round' && this.room.team >= 0 && this.begun === s.round; }
   /** the group boards (keypad, lobby, results...) replace the normal coach / side boards */
-  get panelMode() { return this.view === 'join' || (!!this.room && !this.inRound); }
+  get panelMode() { return this.view === 'join' || (!!this.room && !this.inRound && !this.tutorial); }
 
   // ------------------------------------------------------------------ joining
   openJoin(code = '') {
@@ -61,6 +62,7 @@ export class Group {
   }
 
   leave(restart = true) {
+    this.tutorial = false;
     const room = this.room;
     this.room = null; room?.close();
     try { sessionStorage.removeItem(CURRENT); } catch { /* ignore */ }
@@ -70,9 +72,30 @@ export class Group {
   }
 
   // ------------------------------------------------------------------ room state
+  /** optional practice while waiting in the lobby: the Level 0 tutorial (how to grab, turn and read the boards) */
+  startTutorial() {
+    const room = this.room;
+    if (!room || room.team < 0 || room.state?.phase !== 'lobby') return;
+    this.tutorial = true; this.idle = false;
+    room.send({ type: 'practice', on: true });
+    this.game.enterGroupTutorial();
+  }
+
+  endTutorial() {
+    if (!this.tutorial) return;
+    this.tutorial = false;
+    this.room?.send({ type: 'practice', on: false });
+    this.game.groupIdle(); this.idle = true;
+  }
+
   onState(s) {
     const room = this.room;
     if (!room) return;
+    if (this.tutorial) {
+      if (s.phase !== 'lobby') this.endTutorial();                 // the teacher started: back to the group boards
+      else if (room.team < 0) this.endTutorial();
+      else { this.game.redrawAll(); return; }                      // still practising: keep the tutorial on screen
+    }
     if (s.phase === 'round' && room.team >= 0 && this.begun !== s.round) {
       this.begun = s.round; this.sent = false; this.sig = ''; this.myPoints = 0; this.idle = false;
       this.game.startGroupChallenge(s.challenge);
@@ -190,6 +213,7 @@ export class Group {
       center(t('group.plan', { n: s.totalRounds }), 350, 32, THEME.dim, 500);
       this.drawRows(p, s, 420, false);
       p.button(t('group.swap'), 56 + 330 + 12, h - 100, 250, 78, () => { room.team = -1; this.game.redrawAll(); }, { size: 26 });
+      p.button(t('group.tutorial'), 56, h - 196, w - 112, 78, () => this.startTutorial(), { size: 30 });   // optional: learn how to move before the challenge starts
     } else if (s.phase === 'countdown') {
       center(t('group.round', { n: s.round + 1, total: s.totalRounds }), 190, 40, THEME.dim);
       center(challengeTitle(s.challenge), 250, 52, THEME.good, 800);

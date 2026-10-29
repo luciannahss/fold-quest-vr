@@ -6,7 +6,7 @@ export const MARKER = 'foldquest-group-v1';
 /** Puzzles per level and the base time (seconds) each one gets. Level 0 is one puzzle; Level 3 rounds are the "Who's that protein?" shadows. */
 export const LEVELS = {
   0: { names: ['sort'], seconds: [240] },   // Level 0: fold the six sequences in three stages (the tutorial is not part of it)
-  1: { names: ['1CRN', '1UBQ', '1MBN'], seconds: [240, 330, 420] },
+  1: { names: ['1CRN', '1UBQ', '1MBN', '1EMA'], seconds: [240, 330, 420, 360] },
   2: { names: ['3I40', '4HHB', '1VFB'], seconds: [180, 360, 300] },
   3: { names: ['igg', 'ferritin', 'collagen', 'serca', 'amylase', 'hemoglobin', 'gfp', 'insulin'], seconds: [90, 90, 90, 90, 90, 90, 90, 90] },
 };

@@ -110,7 +110,7 @@ class Room {
         return {
           index: i, name: t.name, color: t.color, claimed: !!t.token, online: this.online(t), score: t.score,
           solved: !!r?.solved, points: r?.points ?? 0, mistakes: r?.mistakes ?? 0, hints: r?.hints ?? 0,
-          joined: r?.joined ?? 0, total: r?.total ?? 0, solvedMs: r?.solvedMs ?? 0,
+          joined: r?.joined ?? 0, total: r?.total ?? 0, solvedMs: r?.solvedMs ?? 0, practising: !!t.practising,
           history: t.rounds.map((x) => (x ? x.points : 0)),
           totalMs: t.rounds.reduce((sum, x, k) => sum + (!x ? 0 : x.solved ? x.solvedMs : this.finished(k) ? (this.list[k]?.seconds ?? 0) * 1000 : 0), 0),
         };
@@ -178,7 +178,7 @@ class Room {
     else if (ws.role === 'player') this.players.delete(ws);
     if (ws.role === 'player' && ws.team >= 0) {
       const t = this.teams[ws.team];
-      if (t.socket === ws) { t.socket = null; t.disconnectedAt = now(); }
+      if (t.socket === ws) { t.socket = null; t.disconnectedAt = now(); t.practising = false; }
     }
     this.broadcast();
   }
@@ -221,6 +221,7 @@ class Room {
     this.round = round;
     this.phase = 'countdown';
     this.doneAt = 0;
+    for (const t of this.teams) t.practising = false;
     this.phaseEndsAt = now() + COUNTDOWN_MS;
     this.startedAt = this.phaseEndsAt;
     this.endsAt = this.startedAt + this.challenge.seconds * 1000;
@@ -306,6 +307,13 @@ class Room {
     for (const v of this.viewers) send(v, payload);
   }
 
+  /** a headset is (or is no longer) practising with the tutorial in the lobby: the teacher screen shows it */
+  practice(ws, msg) {
+    if (ws.role !== 'player' || ws.team < 0 || this.teams[ws.team].socket !== ws) return;
+    this.teams[ws.team].practising = !!msg.on && this.phase === 'lobby';
+    this.broadcast();
+  }
+
   playerTeam(ws, msg) {
     if (ws.role !== 'player' || ws.team < 0) return null;
     const t = this.teams[ws.team];
@@ -380,6 +388,7 @@ wss.on('connection', (ws, room, role, resume) => {
     else if (msg.type === 'progress') room.progress(ws, msg);
     else if (msg.type === 'solved') room.solved(ws, msg);
     else if (msg.type === 'pose') room.pose(ws, msg);
+    else if (msg.type === 'practice') room.practice(ws, msg);
     else if (msg.type === 'ping') send(ws, { type: 'pong', t: msg.t, serverTime: now() });
     else room.command(ws, msg);
   });

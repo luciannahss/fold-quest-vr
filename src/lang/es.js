@@ -418,4 +418,26 @@ export default {
   'stage.done': '✓ ¡Etapa de {kind} completada! Siguiente: {next}. Las secuencias que colocaste vuelven al estante: atención.',
   'stage.continue': 'Continuar  ▶',
   'menu.center': 'Centrar',
+  'exit.home': 'Inicio',
+
+  // ---- Level 1: green fluorescent protein (1EMA)
+  'p.1EMA.name': 'Proteína fluorescente verde',
+  'p.1EMA.subtitle': 'Proteína luminosa de la medusa Aequorea victoria, 225 residuos, 1,9 Å',
+  'p.1EMA.piece.p1': 'HEBRAS 1–2', 'p.1EMA.piece.p2': 'HÉLICE CENTRAL', 'p.1EMA.piece.p3': 'HEBRAS 4–6', 'p.1EMA.piece.p4': 'HEBRA 7', 'p.1EMA.piece.p5': 'HEBRAS 8–9', 'p.1EMA.piece.p6': 'HEBRAS 10–11',
+  'p.1EMA.intro': 'La GFP viene de una medusa y brilla en verde. Sus 11 hebras β se enrollan formando un barril, con una hélice corta que lo atraviesa por el centro. Se ha cortado en 6 piezas, casi todas horquillas de dos o tres hebras. Cuando la proteína esté completa verás el cromóforo: la parte que brilla.',
+  'p.1EMA.links': [
+    'Unión 40 → 41. Tras las hebras 1 y 2 (una horquilla β) la cadena forma la hebra 3 y luego se sumerge en el barril como hélice central.',
+    'Unión 91 → 92. La hélice central termina y la cadena vuelve a la pared del barril con la hebra 4.',
+    'Unión 128 → 129. Tras la hebra 6, un bucle largo recorre el exterior del barril hasta la hebra 7.',
+    'Unión 159 → 160. La hebra 7 lleva a las hebras 8 y 9, otra horquilla β.',
+    'Unión 198 → 199. Las hebras 10 y 11 terminan la cadena y cierran el barril.',
+  ],
+  'p.1EMA.ins0': ' La hélice atraviesa el barril por el centro: el cromóforo está en ella, protegido del agua.',
+  'p.1EMA.ins1': ' La hebra 1 (el comienzo de la cadena) y la hebra 11 (su final) son vecinas: así se cierra el barril.',
+  'p.1EMA.ins2': ' Las hebras 4–6 y 8–9 están muy separadas en la secuencia, pero quedan una junto a otra en la pared del barril.',
+  'p.1EMA.finish': (c) => `Has reconstruido la GFP (1EMA): once hebras β se enrollan en un barril (${c.total} enlaces H de la cadena principal) alrededor de una hélice corta. El cromóforo (formado por tres aminoácidos de la propia proteína: Ser65, Tyr66 y Gly67) está en medio de esa hélice, protegido dentro del barril, y eso es lo que hace brillar a la GFP.`,
+  'p.1EMA.watch': ' Mira cómo aparece el cromóforo…',
+  'group.tutorial': 'Aprende a moverte (tutorial)',
+  'group.tutorial.done': 'Volver a la sala',
+  'pm.practising': 'practicando con el tutorial…',
 };

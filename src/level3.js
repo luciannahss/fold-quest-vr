@@ -453,6 +453,7 @@ export class Level3 {
       options();
     } else {
       p.button(tr('play.again'), 56, r1, 300, bh, () => this.reset(), { primary: true });
+      if (!g.group.active) p.button(tr('exit.home'), 56 + 300 + 12, r1, 240, bh, () => g.hooks.exit(), { size: 28 });   // back to the start screen
       p.button(tr('menu.back'), 56, r2, 330, bh, () => { g.menuOpen = true; g.redrawAll(); }, { size: 30 });   // the Options board lists the levels
       p.button(tr('gal.btn'), 56 + 330 + 12, r2, 232, bh, () => g.setLevel(3, 1), { size: 26 });             // free play: browse all the proteins
       options();

@@ -84,7 +84,7 @@ export class Game {
     this.sheet = optimizeSheet();
     this.mode = 'desktop';
     this.support = { vr: false, ar: false };
-    this.hooks = { switchMode: () => {}, setFloor: () => {}, setHeight: () => {}, recenter: () => {} };
+    this.hooks = { switchMode: () => {}, setFloor: () => {}, setHeight: () => {}, recenter: () => {}, exit: () => {} };
     this.floor = 'hex';
     this.heightOffset = 0;
     this.phase = 'intro';
@@ -251,7 +251,7 @@ export class Game {
     // pieces, the choices, the gallery model): boards just beyond its ends. 'far': three vessels / the lab are spread out wide.
     let layout = 'far';
     if (this.group.panelMode || this.level >= 1) layout = 'rack';
-    else if (this.level === 0 && this.phase !== 'lab' && this.phase !== 'done' && (!this.group.active || this.group.inRound)) layout = this.phase === 'play' ? 'rack' : 'tutorial';
+    else if (this.level === 0 && this.phase !== 'lab' && this.phase !== 'done' && (!this.group.active || this.group.inRound || this.group.tutorial)) layout = this.phase === 'play' ? 'rack' : 'tutorial';
     const L = layout === 'far' ? { p: [-2.1, 1.45, -1.6], r: 0.85 } : layout === 'rack' ? { p: [-1.3, 1.52, -1.3], r: 0.55 } : { p: [-1.0, 1.42, -1.25], r: 0.5 };
     const R = layout === 'far' ? { p: [2.1, 1.45, -1.6], r: -0.85 } : layout === 'rack' ? { p: [1.5, 1.52, -1.3], r: -0.55 } : { p: [1.15, 1.42, -1.25], r: -0.5 };
     const k = this._panelsPlaced ? 1 - Math.exp(-dt * 5) : 1;   // the first call snaps
@@ -278,8 +278,11 @@ export class Game {
   /** how to grab and drop things; `shadow` = the wording for Level 3 */
   inputHint(shadow = false) { return t(`input.${this.mode === 'desktop' ? 'desktop' : 'xr'}${shadow ? '.shadow' : ''}`); }
 
+  /** last step of the tutorial: in the group lobby the practice stops before the solo "your mission" step */
+  get lastStep() { return this.group.tutorial ? STEPS.length - 2 : STEPS.length - 1; }
+
   setStep(i) {
-    this.step = Math.max(0, Math.min(STEPS.length - 1, i));
+    this.step = Math.max(0, Math.min(this.lastStep, i));
     const s = STEPS[this.step];
     this.coach = { title: t(`step.${this.step}.title`), body: t(`step.${this.step}.body`, { input: this.inputHint() }), tone: 'info' };
     this.startDemo(s.demo);
@@ -441,7 +444,20 @@ export class Game {
     this.redrawAll();
   }
 
-  skipTutorial() { if (!this.group.active) this.startPlay(); }
+  skipTutorial() {
+    if (this.group.tutorial) this.group.endTutorial();     // group lobby practice: back to the lobby
+    else if (!this.group.active) this.startPlay();
+  }
+
+  /** group lobby: the player chose to practise (Level 0 tutorial, steps 1-5), without touching the room */
+  enterGroupTutorial() {
+    [...this.l1s, ...this.l2s, ...this.l3s].forEach((l) => (l.group.visible = false));
+    this.level = 0; this.menuOpen = false; this.l0.visible = true;
+    this.staged = false; this.stageDoneT = -1; this._applyStage(false);
+    this.phase = 'intro'; this.step = 0; this.reveal = 0; this.showHint = false;
+    this.resetPieces();
+    this.setStep(0);
+  }
 
   /** what the group challenge watches: the current puzzle (Level 1-3 object, or an adapter for Level 0) */
   get puzzle() {
@@ -504,11 +520,11 @@ export class Game {
       return;
     }
     if (this.phase === 'intro') {
-      const last = this.step === STEPS.length - 1;
+      const practice = this.group.tutorial, last = this.step === this.lastStep;
       p.button(t('back'), 56, r1, 210, bh, () => this.setStep(this.step - 1), { disabled: this.step === 0 });
-      p.button(last ? t('start') : t('next'), 290, r1, 260, bh, () => (last ? this.startPlay() : this.setStep(this.step + 1)), { primary: true });
-      p.text(`${this.step + 1} / ${STEPS.length}`, w - 56, r1 + 20, { size: 34, color: THEME.dim, align: 'right' });
-      if (!last) p.button(t('tb.skip'), 56, r2, 330, bh, () => this.skipTutorial(), { size: 32 });
+      p.button(last ? (practice ? t('group.tutorial.done') : t('start')) : t('next'), 290, r1, practice && last ? 420 : 260, bh, () => (last ? (practice ? this.group.endTutorial() : this.startPlay()) : this.setStep(this.step + 1)), { primary: true, size: practice && last ? 30 : 36 });
+      p.text(`${this.step + 1} / ${this.lastStep + 1}`, w - 56, r1 + 20, { size: 34, color: THEME.dim, align: 'right' });
+      if (!last) p.button(practice ? t('group.tutorial.done') : t('tb.skip'), 56, r2, 330, bh, () => this.skipTutorial(), { size: 32 });
       options();
     } else if (this.phase === 'play') {
       p.text(t('l0.status', { a: this.placedCount, b: this.chains.length, m: this.mistakes }), 56, r1 - 58, { size: 34, color: THEME.text, weight: 700 });
@@ -519,6 +535,7 @@ export class Game {
     } else {
       p.button(t('play.again'), 56, r1, 300, bh, () => { this.phase = 'play'; this.startPlay(); }, { primary: true });
       p.button(t('replay'), 380, r1, 360, bh, () => this.restart(), { size: 32 });
+      p.button(t('exit.home'), 756, r1, w - 56 - 756, bh, () => this.hooks.exit(), { size: 28 });   // back to the start screen (in VR this ends the session)
       p.button(t('next.level', { n: 1 }), 56, r2, 330, bh, () => this.setLevel(1), { primary: true, size: 30 });
       p.button(t('lab.btn'), 56 + 330 + 12, r2, 232, bh, () => this.lab.enter(), { size: 24 });
       options();
@@ -666,7 +683,7 @@ export class Game {
       ], y, 22); y += 80;
       if (this.level === 1 || this.level === 2) {
         const list = this.level === 1 ? this.l1s : this.l2s;
-        row(list.map((l, i) => ({ label: l.protein.name, onClick: () => this.setLevel(this.level, i), active: this.l1 === l })), y, list.length > 3 ? 20 : 22);
+        row(list.map((l, i) => ({ label: l.protein.short || l.protein.name, onClick: () => this.setLevel(this.level, i), active: this.l1 === l })), y, list.length > 3 ? 20 : 22);
       }
     }
     const by = p.h - 120, half = (bw - 12) / 2;

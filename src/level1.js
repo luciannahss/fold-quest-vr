@@ -9,6 +9,7 @@ import { THEME } from './ui.js';
 import { makeLabel } from './vessels.js';
 import { sfx } from './audio.js';
 import { applyRotation } from './handle.js';
+import { makeCartoon } from './cartoon.js';
 import { PROTEINS } from './proteins/index.js';
 import { t as tr } from './i18n.js';
 
@@ -144,6 +145,17 @@ export class Level1 {
 
   /** coil / loop spans as thin round tubes along the C-alpha path, yellow like the coil name tags */
   _buildCartoonTubes(chain, S, def) {
+    if (this.protein.multiElement) {     // pieces with several strands / helices (GFP): one cartoon built from the per-residue secondary structure
+      const ss = this.protein.data.residues.filter((r) => r.n >= def.from && r.n <= def.to).map((r) => r.ss);
+      chain.cartoonApi = makeCartoon(chain.res, ss, S, null);
+      chain.group.add(chain.cartoonApi.group);
+      chain.kind = 'coil'; chain.ribbon.visible = false;   // Chain's own single ribbon is not used here
+      // the peptide-bond tubes that later join two pieces (_addBridge) use the coil tube's material and radius
+      const col = new THREE.Color(TYPE.coil.color);
+      chain.tubeMat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.2, roughness: 0.45, metalness: 0.05 });
+      chain.tubeRadius = 0.0083 * Math.pow(1.15 / S, 0.4);
+      return;
+    }
     const n = chain.res.length, rr = chain.ribbonRange, spans = [];
     if (!rr) spans.push([0, n - 1]);
     else {
@@ -360,6 +372,7 @@ export class Level1 {
       ch.setAtomsVisible(v); ch.setSideChains(v); ch.setLabels(v);
       // with atoms shown the cartoon turns see-through so the atoms inside stay visible
       const rm = ch.ribbon.material; rm.transparent = v; rm.opacity = v ? 0.5 : 1; rm.depthWrite = !v; rm.needsUpdate = true;
+      ch.cartoonApi?.setTransparent(v);
     }
     this.game.coachPanel.redraw();
   }
@@ -370,12 +383,13 @@ export class Level1 {
   /** what the finish screen offers next: the next protein, then Level 2 */
   nextTarget() {
     const next = PROTEINS[this.index + 1];
-    if (next) return { label: tr('next.item', { name: next.name }), go: () => this.game.setLevel(1, this.index + 1) };
+    if (next) return { label: tr('next.item', { name: next.short || next.name }), go: () => this.game.setLevel(1, this.index + 1) };
     return { label: tr('next.level', { n: 2 }), go: () => this.game.setLevel(2, 0) };
   }
   extraCtx() { return {}; }
   completeText() {
-    const more = this.bridges.length ? tr('l1.more.ss') : this.ligandGroup ? tr('l1.more.heme') : '';
+    const watch = tr(`p.${this.protein.id}.watch`);   // (optional per-protein text: what is about to appear)
+    const more = this.bridges.length ? tr('l1.more.ss') : this.ligandGroup ? (watch.startsWith('p.') ? tr('l1.more.heme') : watch) : '';
     return tr('l1.complete', { n: this.pieces.length, more });
   }
 
@@ -750,6 +764,7 @@ export class Level1 {
       const nx = this.nextTarget();
       if (nx) p.button(nx.label, 56, r2, 330, bh, nx.go, { primary: true, size: 30 });
       else p.button(tr('level.complete'), 56, r2, 330, bh, () => {}, { disabled: true, size: 30 });
+      if (!g.group.active) p.button(tr('exit.home'), 56 + 330 + 12, r2, 234, bh, () => g.hooks.exit(), { size: 28 });   // back to the start screen
       options();
     }
   }

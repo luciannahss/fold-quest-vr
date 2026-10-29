@@ -6,7 +6,7 @@
 import fs from 'fs';
 const [,, file, chainArg = 'A', out] = process.argv;
 const chains = chainArg.split(',');
-const THREE_TO_ONE = { ALA:'A',ARG:'R',ASN:'N',ASP:'D',CYS:'C',GLU:'E',GLN:'Q',GLY:'G',HIS:'H',ILE:'I',LEU:'L',LYS:'K',MET:'M',PHE:'F',PRO:'P',SER:'S',THR:'T',TRP:'W',TYR:'Y',VAL:'V' };
+const THREE_TO_ONE = { MSE:'M', ALA:'A',ARG:'R',ASN:'N',ASP:'D',CYS:'C',GLU:'E',GLN:'Q',GLY:'G',HIS:'H',ILE:'I',LEU:'L',LYS:'K',MET:'M',PHE:'F',PRO:'P',SER:'S',THR:'T',TRP:'W',TYR:'Y',VAL:'V' };
 const lines = fs.readFileSync(file, 'utf8').split('\n');
 const V = { sub: (a, b) => a.map((v, i) => v - b[i]), add: (a, b) => a.map((v, i) => v + b[i]), mul: (a, s) => a.map((v) => v * s),
   len: (a) => Math.hypot(...a), norm: (a) => { const L = Math.hypot(...a) || 1; return a.map((v) => v / L); },
@@ -15,7 +15,7 @@ const V = { sub: (a, b) => a.map((v, i) => v - b[i]), add: (a, b) => a.map((v, i
 // ---- atoms per chain
 const byChain = chains.map(() => new Map());
 for (const l of lines) {
-  if (!l.startsWith('ATOM')) continue;
+  if (!l.startsWith('ATOM') && !(l.startsWith('HETATM') && l.slice(17, 20) === 'MSE')) continue;   // selenomethionine (MSE) is stored as HETATM but is a normal residue
   const ci = chains.indexOf(l[21]);
   if (ci < 0) continue;
   if (l[16] !== ' ' && l[16] !== 'A') continue; // first altloc only
@@ -70,7 +70,7 @@ const groups = new Map();
 for (const l of lines) {
   if (!l.startsWith('HETATM') || !chains.includes(l[21])) continue;
   const rn = l.slice(17, 20).trim();
-  if (rn === 'HOH' || rn === 'WAT') continue;
+  if (rn === 'HOH' || rn === 'WAT' || rn === 'MSE') continue;
   const name = l.slice(12, 16).trim();
   const e = (l.slice(76, 78).trim() || (name.startsWith('FE') ? 'FE' : name[0])).toUpperCase();
   if (!groups.has(rn)) groups.set(rn, []);
