@@ -31,6 +31,9 @@
   .chip:hover { border-color:var(--cyan); }
   .chip.on { border-color:var(--pink); background:rgba(255,61,242,.18); }
   .row.langs { margin:0 0 18px; }
+  .credits { display:flex; align-items:center; justify-content:flex-end; gap:14px; margin-top:22px; color:var(--dim); font-size:14px; text-align:right; }
+  .credits img { height:72px; width:auto; flex:none; filter:drop-shadow(0 0 10px rgba(56,232,255,.28)); }   /* recoloured logo: transparent background, glows softly like the rest of the screen */
+  @media (max-width:520px){ .credits { flex-direction:column; align-items:flex-end; } }
   .groupjoin { margin:14px 0 4px; }
   .groupjoin input { width:5.2em; padding:7px 10px; border-radius:10px; border:1.5px solid #3a4b9a; background:rgba(255,255,255,.06); color:var(--ink); font:inherit; letter-spacing:.25em; text-align:center; }
   #group-note { margin:4px 0 0; color:var(--pink); font-size:14.5px; min-height:1.3em; }
@@ -76,6 +79,7 @@
       <li data-i18n-html="ov.li2"><b>Right move?</b> It folds, snaps or docks into place. <b>Wrong?</b> It bounces back and the coach board tells you why. Use <b>Hint</b> if you get stuck.</li>
       <li data-i18n="ov.li3">On screen: drag to grab, scroll to push/pull, drag the background to look around.</li>
     </ul>
+    <div class="credits"><span data-i18n="ov.credit">Developed by the Biomolecular Simulations Group and the SIRAH initiative</span><img src="./assets/sirah-logo.png" width="204" height="72" alt="SIRAH: Southamerican Initiative for a Rapid and Accurate Hamiltonian"></div>
   </div>
 </div>
 <script type="module" src="./src/main.js"></script>

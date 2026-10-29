@@ -440,4 +440,5 @@ export default {
   'group.tutorial': 'Aprende a moverte (tutorial)',
   'group.tutorial.done': 'Volver a la sala',
   'pm.practising': 'practicando con el tutorial…',
+  'ov.credit': 'Desarrollado por el Grupo de Simulaciones Biomoleculares y la iniciativa SIRAH',
 };

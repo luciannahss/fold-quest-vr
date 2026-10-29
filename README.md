@@ -125,3 +125,12 @@ Test without a headset: open `http://localhost:8080/?iwer` (Meta Quest 3 emulato
 
 Everything chemically shown is computed: helix bonds are O(i)→H(i+4) at ~2.1 Å, sheet strands sit ~5 Å apart with 8 bonds between them.
 Sequences are classified with Chou–Fasman propensities (`classifySequence`), so you can add new sequences to `SEQUENCES` in `game.js`.
+
+## Credits
+
+- **Developed by the Biomolecular Simulations Group and the SIRAH initiative** (*Southamerican Initiative for a Rapid and Accurate Hamiltonian*). The SIRAH logo is in `assets/sirah-logo.png` and appears on the start screen.
+- **Group challenge:** the room protocol, the teacher screen and the scoring idea are adapted, with permission, from the "Desafio em grupo" of [Encaixe Molecular VR](https://github.com/deborahantunes/encaixe-perfeito) by Deborah Antunes.
+- **Protein structures** come from the RCSB Protein Data Bank: 1CRN (crambin), 1UBQ (ubiquitin), 1MBN (myoglobin), 1EMA (green fluorescent protein), 3I40 (insulin), 4HHB (hemoglobin), 1VFB (antibody Fv–lysozyme), and for the Level 3 shadows also 1IGT (IgG), 1FHA (ferritin), 1BKV (collagen), 1SU4 (calcium pump), 1PPI (alpha-amylase) and 2LZT (lysozyme).
+- **Level 3 "Who's that protein?"** is inspired by the PDB-101 "Shape & Function" poster.
+- **Software:** [three.js](https://threejs.org) (rendering), [IWER](https://github.com/meta-quest/immersive-web-emulation-runtime) (headset emulator used for testing), `isosurface` (marching cubes, offline surface tool) and `ws` (room server).
+

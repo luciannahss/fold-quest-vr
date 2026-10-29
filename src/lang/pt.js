@@ -440,4 +440,5 @@ export default {
   'group.tutorial': 'Aprenda a se mover (tutorial)',
   'group.tutorial.done': 'Voltar ao lobby',
   'pm.practising': 'praticando com o tutorial…',
+  'ov.credit': 'Desenvolvido pelo Grupo de Simulações Biomoleculares e pela iniciativa SIRAH',
 };
