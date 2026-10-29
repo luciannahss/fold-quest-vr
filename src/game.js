@@ -236,6 +236,12 @@ export class Game {
     this.redrawAll();
   }
 
+  /** VR: a small Center button in the top-right corner of the left board (always in reach, whatever is being played) */
+  _centerButton(p) {
+    if (this.mode === 'desktop') return;
+    p.button(t('menu.center'), p.w - 50 - 176, 22, 176, 64, () => this.hooks.recenter(), { size: 26 });
+  }
+
   /**
    * The tutorial has a single molecule in the middle, so the boards come in close (no need to turn the head and lose the
    * animation); with the vessels and trays they stay out wide. They glide between the two layouts.
@@ -255,7 +261,11 @@ export class Game {
 
   redrawAll() {
     this.coachPanel.set((p) => this._drawCoach(p));
-    this.sidePanel.set((p) => (this.menuOpen ? this._drawMenu(p) : this.group.panelMode ? this.group.drawSide(p) : this.level >= 1 ? this.l1.drawSide(p) : this._drawSide(p)));
+    this.sidePanel.set((p) => {
+      if (this.menuOpen) { this._drawMenu(p); return; }       // (the Options board has its own Center button)
+      if (this.group.panelMode) this.group.drawSide(p); else if (this.level >= 1) this.l1.drawSide(p); else this._drawSide(p);
+      this._centerButton(p);
+    });
   }
 
   // ------------------------------------------------------------------ flow

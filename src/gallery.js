@@ -170,7 +170,7 @@ export class Gallery {
   drawSide(p) {
     const { w, g } = p;
     const id = IDS[this.sel], info = POOL[id], cat = CATEGORIES[info.category], it = this.items.get(id);
-    let y = p.text(info.name, 50, 34, { size: 44, weight: 800, color: cat.color, maxW: w - 100, lh: 1.1 }) + 10;
+    let y = p.text(info.name, 50, 34, { size: 44, weight: 800, color: cat.color, maxW: w - 100 - 220, lh: 1.1 }) + 10;   // (leaves the corner free for the Center button)
     y = p.text(`${cat.label} · PDB ${info.pdb}`, 50, y, { size: 28, color: THEME.dim, maxW: w - 100 }) + 24;
     y = p.text(info.fact, 50, y, { size: 28, maxW: w - 100, lh: 1.28 }) + 28;
     if (it) {
