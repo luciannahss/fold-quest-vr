@@ -247,10 +247,13 @@ export class Game {
    * animation); with the vessels and trays they stay out wide. They glide between the two layouts.
    */
   _placePanels(dt) {
-    const near = this.level === 0 && this.phase !== 'lab' && this.phase !== 'done' && (!this.group.active || this.group.inRound);   // (the finale spreads the three vessels out: boards go wide again)
-    const rack = this.phase === 'play';   // the sequences wait on a rack in front: keep the boards just beyond its ends
-    const L = !near ? { p: [-2.1, 1.45, -1.6], r: 0.85 } : rack ? { p: [-1.3, 1.52, -1.3], r: 0.55 } : { p: [-1.0, 1.42, -1.25], r: 0.5 };
-    const R = !near ? { p: [2.1, 1.45, -1.6], r: -0.85 } : rack ? { p: [1.5, 1.52, -1.3], r: -0.55 } : { p: [1.15, 1.42, -1.25], r: -0.5 };
+    // 'tutorial': one molecule in the middle, boards right next to it. 'rack': something playable in front (the sequences, the
+    // pieces, the choices, the gallery model): boards just beyond its ends. 'far': three vessels / the lab are spread out wide.
+    let layout = 'far';
+    if (this.group.panelMode || this.level >= 1) layout = 'rack';
+    else if (this.level === 0 && this.phase !== 'lab' && this.phase !== 'done' && (!this.group.active || this.group.inRound)) layout = this.phase === 'play' ? 'rack' : 'tutorial';
+    const L = layout === 'far' ? { p: [-2.1, 1.45, -1.6], r: 0.85 } : layout === 'rack' ? { p: [-1.3, 1.52, -1.3], r: 0.55 } : { p: [-1.0, 1.42, -1.25], r: 0.5 };
+    const R = layout === 'far' ? { p: [2.1, 1.45, -1.6], r: -0.85 } : layout === 'rack' ? { p: [1.5, 1.52, -1.3], r: -0.55 } : { p: [1.15, 1.42, -1.25], r: -0.5 };
     const k = this._panelsPlaced ? 1 - Math.exp(-dt * 5) : 1;   // the first call snaps
     this._panelsPlaced = true;
     for (const [panel, tg] of [[this.sidePanel, L], [this.coachPanel, R]]) {
