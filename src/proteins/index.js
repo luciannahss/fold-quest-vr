@@ -107,6 +107,18 @@ export const COMPLEXES = [
     insights: [],
   },
   {
+    id: '1VFB',
+    data: antibody,
+    scale: 0.6,
+    ifaceDist: 8.0,   // antigen contacts are small: measure interfaces a little more generously
+    pieces: [
+      { id: 'vl', short: 'VL', type: 'helix', color: '#5b8bff', from: 1, to: 107 },
+      { id: 'vh', short: 'VH', type: 'strand', color: '#ff7a2d', from: 1001, to: 1116 },
+      { id: 'ag', short: 'Ag', type: 'coil', color: '#35c98a', from: 2001, to: 2129 },
+    ],
+    insights: [],
+  },
+  {
     id: '4HHB',
     data: hemoglobin,
     scale: 0.55,
@@ -116,18 +128,6 @@ export const COMPLEXES = [
       { id: 'b1', short: 'β1', type: 'strand', color: '#ff7a2d', from: 1001, to: 1146 },
       { id: 'a2', short: 'α2', type: 'helix', color: '#9a6bff', from: 2001, to: 2141 },
       { id: 'b2', short: 'β2', type: 'strand', color: '#e0334d', from: 3001, to: 3146 },
-    ],
-    insights: [],
-  },
-  {
-    id: '1VFB',
-    data: antibody,
-    scale: 0.6,
-    ifaceDist: 8.0,   // antigen contacts are small: measure interfaces a little more generously
-    pieces: [
-      { id: 'vl', short: 'VL', type: 'helix', color: '#5b8bff', from: 1, to: 107 },
-      { id: 'vh', short: 'VH', type: 'strand', color: '#ff7a2d', from: 1001, to: 1116 },
-      { id: 'ag', short: 'Ag', type: 'coil', color: '#35c98a', from: 2001, to: 2129 },
     ],
     insights: [],
   },

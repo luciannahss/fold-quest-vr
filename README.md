@@ -32,7 +32,7 @@ Ubiquitin and myoglobin have no disulfides, so their finale shows the H-bond net
 To add a protein: `node tools/prep-pdb.mjs data/XXXX.pdb A src/proteins/xxxx.js` (backbone atoms, computed H, R-group positions, S–S pairs),
 then add an entry to `src/proteins/index.js` (cut list, display scale, junction text, insights, finale text). Loops attach to the preceding element.
 
-**Level 2 — Quaternary structure** (complexes of several chains: insulin 3I40 with 2 chains, hemoglobin 4HHB with 4, and an antibody Fv bound to its antigen lysozyme, 1VFB, with 3)
+**Level 2 — Quaternary structure** (complexes of several chains: insulin 3I40 with 2 chains, an antibody Fv bound to its antigen lysozyme, 1VFB, with 3, and hemoglobin 4HHB with 4)
 
 Each chain is a rigid cartoon piece. The residues that touch the other chain form an **interface patch**: glowing spheres
 coloured by chemistry (amber hydrophobic, green polar, cyan positive, pink negative). Each chain is a different colour. Chain A carries a round **knob with a tab**, chain B a matching **socket (closed
