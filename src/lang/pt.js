@@ -345,7 +345,7 @@ export default {
   'pm.l1': 'Nível 1 · montar proteínas',
   'pm.l2': 'Nível 2 · acoplar cadeias',
   'pm.l3': 'Nível 3 · que proteína é essa?',
-  'pm.how': 'quebra-cabeças',
+  'pm.how': 'toque para escolher',
   'pm.time': 'Tempo por quebra-cabeça',
   'pm.scale.1': 'Normal',
   'pm.scale.1.5': 'Tranquilo (×1,5)',

@@ -14,7 +14,7 @@
 import { createServer } from 'node:http';
 import { randomBytes, randomInt } from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
-import { MARKER, SCALES, TEAMS, TEAM_COLORS, TEAM_NAMES, challengeList, ranking, roundPoints, validPlan } from './challenges.mjs';
+import { MARKER, SCALES, TEAMS, TEAM_COLORS, TEAM_NAMES, challengeList, normPlan, ranking, roundPoints, validPlan } from './challenges.mjs';
 
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = Number(process.env.PORT || 8790);
@@ -67,7 +67,7 @@ class Room {
     this.players = new Set();
     this.lastActivity = now();
     this.seq = 0;
-    this.plan = { 0: 1, 1: 1, 2: 1, 3: 3 };
+    this.plan = normPlan({ 0: 1, 1: 1, 2: 1, 3: 3 });
     this.scale = 1;
     this.list = challengeList(this.plan, this.scale);
     this.teams = Array.from({ length: TEAMS }, (_, i) => ({
@@ -191,7 +191,7 @@ class Room {
       if (this.phase !== 'lobby' && this.phase !== 'podium') return;
       const plan = { 0: msg.plan?.[0] ?? 0, 1: msg.plan?.[1], 2: msg.plan?.[2], 3: msg.plan?.[3] };
       if (!validPlan(plan) || !SCALES.includes(msg.scale)) return;
-      this.plan = plan;
+      this.plan = normPlan(plan);
       this.scale = msg.scale;
       this.list = challengeList(this.plan, this.scale);
       if (this.phase === 'podium') this.reset();

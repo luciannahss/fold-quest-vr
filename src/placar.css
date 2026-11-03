@@ -36,8 +36,8 @@ h1,h2 { margin:0; } .kicker { color:var(--dim); font-weight:700; margin:0 0 .3em
 .join ol { margin:.4em 0 0; padding-left:1.3em; line-height:1.6; } .join ol b { color:var(--cyan); }
 .join .link { color:var(--dim); font-size:.85em; word-break:break-all; }
 .setup { display:flex; flex-direction:column; gap:.7em; } .setup h2 { font-size:1em; color:var(--dim); }
-.plan { display:grid; grid-template-columns:1fr auto; gap:.4em .8em; align-items:center; }
-.opts { display:flex; gap:.4em; }
+.plan { display:grid; grid-template-columns:auto 1fr; gap:.4em .8em; align-items:center; }
+.opts { display:flex; flex-wrap:wrap; gap:.4em; }
 .opts button { min-width:2.4em; height:2.4em; border-radius:999px; border:2px solid var(--line); background:rgba(255,255,255,.05); font-weight:700; cursor:pointer; padding:0 .7em; }
 .opts button.on { background:var(--warn); color:#02030a; border-color:var(--warn); }
 .teams { display:grid; grid-template-columns:1fr 1fr; gap:.7em; }

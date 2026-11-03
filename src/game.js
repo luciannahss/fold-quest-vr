@@ -359,7 +359,8 @@ export class Game {
     this.demoRun = { key: null, t: 0 };
     this.staged = true; this.stage = 0; this.stageDoneT = -1;   // solo and group play: one structure at a time
     this.coach = this.staged ? this._stageCoach() : { title: t('play.title'), body: t('play.body', { input: this.inputHint() }), tone: 'info' };
-    this.resetPieces();
+    this._shuffleRack();                                        // a new order every round
+    this.resetPieces();                                         // (puts every sequence on its new spot)
     this._applyStage(true);
     this.redrawAll();
     sfx.good();
@@ -398,12 +399,24 @@ export class Game {
         this.sendHome(c);
       }
     }
+    this._shuffleRack();
     this.stage = Math.min(STAGE_KINDS.length - 1, this.stage + 1);
     this.stageDoneT = -1;
     this._applyStage(true);
     this.coach = this._stageCoach();
     sfx.click();
     this.redrawAll();
+  }
+
+  /** the sequences swap places on the rack, so nobody can answer from memory of where each one sat */
+  _shuffleRack() {
+    const homes = this.chains.map((c) => c.userData.home.clone());
+    for (let i = homes.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [homes[i], homes[j]] = [homes[j], homes[i]]; }
+    this.chains.forEach((c, i) => {
+      const u = c.userData;
+      u.home.copy(homes[i]);
+      if (u.state === 'tray') this.sendHome(c);       // glide to the new place (the ones coming from a vessel are already on their way)
+    });
   }
 
   resetPieces() {
