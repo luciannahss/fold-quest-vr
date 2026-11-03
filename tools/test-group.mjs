@@ -30,6 +30,11 @@ check(host.state.totalRounds === 6 && host.state.challenges[0].level === 0, 'def
 host.send({ type: 'config', plan: { 0: 0, 1: 0, 2: 1, 3: 1 }, scale: 1 });
 await until(() => host.state.totalRounds === 2);
 check(host.state.totalRounds === 2 && host.state.challenges[0].level === 2, 'config: Level 2 + Level 3');
+host.send({ type: 'config', plan: { 0: [], 1: [0, 3], 2: [], 3: [] }, scale: 1 });
+await until(() => host.state.challenges.length === 2 && host.state.challenges[0].level === 1);
+check(host.state.challenges.map((c) => c.name).join() === '1CRN,1EMA' && host.state.challenges[1].seconds === 360, 'config: pick Crambin and GFP only');
+host.send({ type: 'config', plan: { 0: 0, 1: 0, 2: 1, 3: 1 }, scale: 1 });
+await until(() => host.state.totalRounds === 2 && host.state.challenges[0].level === 2);
 host.send({ type: 'config', plan: { 0: 0, 1: 0, 2: 0, 3: 0 }, scale: 1 }); await sleep(100);
 check(host.state.totalRounds === 2, 'empty plan rejected');
 host.send({ type: 'start' }); await sleep(100);

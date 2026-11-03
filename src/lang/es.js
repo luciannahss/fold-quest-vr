@@ -345,7 +345,7 @@ export default {
   'pm.l1': 'Nivel 1 · construir proteínas',
   'pm.l2': 'Nivel 2 · acoplar cadenas',
   'pm.l3': 'Nivel 3 · ¿quién es esa proteína?',
-  'pm.how': 'puzles',
+  'pm.how': 'toca para elegir',
   'pm.time': 'Tiempo por puzle',
   'pm.scale.1': 'Normal',
   'pm.scale.1.5': 'Relajado (×1,5)',

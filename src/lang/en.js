@@ -347,7 +347,7 @@ export default {
   'pm.l1': 'Level 1 · build proteins',
   'pm.l2': 'Level 2 · dock chains',
   'pm.l3': 'Level 3 · who’s that protein?',
-  'pm.how': 'puzzles',
+  'pm.how': 'tap to choose',
   'pm.time': 'Time per puzzle',
   'pm.scale.1': 'Normal',
   'pm.scale.1.5': 'Relaxed (×1.5)',

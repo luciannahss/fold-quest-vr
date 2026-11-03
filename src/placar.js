@@ -145,7 +145,8 @@ function teamCard(tm) {
 function lobbyHtml(s) {
   const link = gameLink(client.room);
   const ready = s.teams.some((x) => x.claimed);
-  const plan = [0, 1, 2, 3].map((lv) => `<span>${t(`pm.l${lv}`)}</span><div class="opts">${Array.from({ length: LEVELS[lv].names.length + 1 }, (_, n) => `<button class="${s.plan[lv] === n ? 'on' : ''}" data-plan="${lv}:${n}">${n}</button>`).join('')}</div>`).join('');
+  const chip = (lv, i) => (lv === 1 || lv === 2 ? t(`p.${LEVELS[lv].names[i]}.name`) : String(i + 1));
+  const plan = [0, 1, 2, 3].map((lv) => `<span>${t(`pm.l${lv}`)}</span><div class="opts">${LEVELS[lv].names.map((_, i) => `<button class="${s.plan[lv]?.includes(i) ? 'on' : ''}" data-plan="${lv}:${i}">${esc(chip(lv, i))}</button>`).join('')}</div>`).join('');
   return `<section class="lobby">
     <div class="join card">
       <p class="kicker">${t('pm.code')}</p>
@@ -277,7 +278,7 @@ app.addEventListener('click', (e) => {
   if (!el) return;
   const s = client?.state;
   if (el.dataset.lang) { setLang(el.dataset.lang); return; }
-  if (el.dataset.plan && s) { const [lv, n] = el.dataset.plan.split(':').map(Number); cmd({ type: 'config', plan: { ...s.plan, [lv]: n }, scale: s.scale }); return; }
+  if (el.dataset.plan && s) { const [lv, i] = el.dataset.plan.split(':').map(Number), cur = s.plan[lv] ?? []; cmd({ type: 'config', plan: { ...s.plan, [lv]: cur.includes(i) ? cur.filter((x) => x !== i) : [...cur, i] }, scale: s.scale }); return; }
   if (el.dataset.scale && s) { cmd({ type: 'config', plan: s.plan, scale: Number(el.dataset.scale) }); return; }
   if (el.dataset.free) { cmd({ type: 'free', team: Number(el.dataset.free) }); return; }
   switch (el.dataset.act) {
